@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="berukichi">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M3春2027 巡回マップ</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23c2346d'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='6.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 46V18l11 15 11-15v28'/%3E%3Cpath d='M38 19h10a6.5 6.5 0 0 1 0 13h-5h5a6.5 6.5 0 0 1 0 13H38'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;800&family=M+PLUS+Rounded+1c:wght@800&family=JetBrains+Mono:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<style>
+/* Layout: phone-first single column — sticky hall tabs, zoomable map, then the ordered route list */
+:root{
+  --bg:#f4f3f9; --surface:#ffffff; --ink:#1d1b33; --muted:#686583; --line:#d8d5e7; --raise:#eceaf5; --desk:#e6e4f0; --desk-ink:#9a97b3;
+  --accent:#c2346d; --p1:#c2346d; --p2:#3b58d4; --p3:#86849e; --ok:#2b8a57; --hall:#3a3757;
+  /* Oxanium has Latin only, so Japanese in the title falls through to M PLUS Rounded 1c */
+  --f-display:"Oxanium","M PLUS Rounded 1c","Zen Kaku Gothic New",system-ui,sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13121d; --surface:#1d1b2c; --ink:#ecebf6; --muted:#a3a0bf; --line:#34314c; --raise:#26243a; --desk:#2a2840; --desk-ink:#6f6c8c;
+  --accent:#ff6c9f; --p1:#ff6c9f; --p2:#7f96ff; --p3:#8d8aa8; --ok:#5cc98a; --hall:#b9b6d6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13121d; --surface:#1d1b2c; --ink:#ecebf6; --muted:#a3a0bf; --line:#34314c; --raise:#26243a; --desk:#2a2840; --desk-ink:#6f6c8c;
+  --accent:#ff6c9f; --p1:#ff6c9f; --p2:#7f96ff; --p3:#8d8aa8; --ok:#5cc98a; --hall:#b9b6d6; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{padding-top:18px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+header{position:relative}
+.colorpop{position:absolute;right:0;top:calc(100% + 6px);z-index:12;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:calc(100vw - 32px);flex-wrap:wrap}
+.cp-l{font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.cp-sw{display:flex;flex-wrap:wrap;gap:8px}
+.sw-btn{appearance:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;background:var(--c);box-shadow:inset 0 0 0 2px var(--surface)}
+.sw-btn[aria-pressed="true"]{border-color:var(--ink);transform:scale(1.08)}
+.hd{min-width:0;display:flex;flex-direction:column;gap:2px}
+.theme{appearance:none;flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.hdbtns{display:flex;gap:8px;flex:none}
+a.theme{text-decoration:none}
+.helplink{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;color:var(--accent);font-weight:700;font-size:.88rem;text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:6px 14px}
+.helplink:hover{background:var(--raise)}
+.theme svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+h1{font-family:var(--f-display);font-weight:800;font-size:1.55rem;line-height:1.2;margin:0;text-wrap:balance;letter-spacing:.02em}
+h1 .lat{font-weight:600;font-size:1.12em;letter-spacing:.05em}
+h1 em{font-style:normal;color:var(--accent)}
+.notice{margin:0;font-size:.8rem;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
+.notice b{color:var(--accent)}
+.sub{color:var(--muted);font-size:.85rem}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-block:8px}
+.tab{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:7px 4px;font:inherit;font-size:.8rem;line-height:1.25;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.tab b{font-size:.9rem}
+.tab .n{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab[aria-selected="true"] .n{color:inherit;opacity:.75}
+.mapcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+.mapscroll{overflow:auto;max-height:62vh;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.mapscroll svg{display:block}
+.zoom{position:absolute;right:8px;bottom:20px;display:flex;gap:6px}
+.zoom button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 1.1rem var(--f-mono);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.zoom .pin{width:auto;border-radius:19px;padding:0 12px 0 10px;display:flex;align-items:center;gap:4px;font:700 .78rem var(--f-body)}
+.pin svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.zoom .pin[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.zoom .pin[aria-pressed="true"] svg{fill:currentColor}
+/* 地図を固定: the tabs and map stay on screen while the list scrolls underneath */
+.mapdock{display:flex;flex-direction:column;gap:0}
+.mapdock.pinned{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);padding-bottom:8px;box-shadow:0 8px 12px -10px rgba(0,0,0,.35)}
+.mapdock.pinned .tabs{position:static}
+.mapdock.pinned .mapscroll{max-height:48vh}
+.mapdock.pinned .maphint{font-size:.7rem;padding:4px 12px;gap:2px 10px}
+.mapview{position:relative}
+.maphint{font-size:.75rem;color:var(--muted);padding:6px 12px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px 14px}
+.lg{display:inline-flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.panel{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.lbl{font-size:.72rem;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;color:var(--ink);font:inherit;font-size:.82rem;padding:7px 11px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.summary{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85rem;color:var(--muted)}
+.summary b{color:var(--ink);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+ol.route{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.stop{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:34px 1fr;gap:4px 10px;align-items:start}
+.stop.done{opacity:.55}
+.num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 .85rem var(--f-mono);background:var(--pc,var(--p2))}
+.stop.done .num{background:var(--ok)}
+.body{min-width:0;display:flex;flex-direction:column;gap:6px}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.name{font-weight:700;font-size:1rem;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.booth{font-family:var(--f-mono);font-weight:700;font-size:.95rem;white-space:nowrap}
+.meta{font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px}
+.meta a{color:var(--muted)}
+.ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pr{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.pr button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.74rem;padding:4px 8px;cursor:pointer}
+.pr button+button{border-left:1px solid var(--line)}
+.pr button[aria-pressed="true"]{color:#fff}
+.pr button[data-p="1"][aria-pressed="true"]{background:var(--p1)}
+.pr button[data-p="2"][aria-pressed="true"]{background:var(--p2)}
+.pr button[data-p="3"][aria-pressed="true"]{background:var(--p3)}
+.chk{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;cursor:pointer;padding:3px 8px;border:1px solid var(--line);border-radius:8px}
+.passbtn{appearance:none;font:inherit;font-size:.78rem;padding:3px 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);cursor:pointer}
+.passbtn[aria-pressed="true"]{border-color:var(--p3);color:var(--muted)}
+.stop.passed{border-style:dashed}
+.stop.passed .num{background:var(--p3)}
+.move.passsep{color:var(--muted)}
+.chk input{accent-color:var(--ok);margin:0}
+.move{font-size:.8rem;color:var(--accent);font-weight:700;padding:2px 4px 2px 44px;display:flex;align-items:center;gap:6px}
+h2{font-size:.78rem;letter-spacing:.1em;color:var(--muted);margin:10px 0 0;font-weight:700}
+.note{font-size:.75rem;color:var(--muted)}
+button:focus-visible,input:focus-visible,a:focus-visible,.name:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.addbox input{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+ol.results{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.res{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.res .rn{min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.res .rn b{overflow-wrap:anywhere}
+.res .rn span{font-size:.75rem;color:var(--muted);overflow-wrap:anywhere}
+.btn{appearance:none;border:1px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-size:.78rem;font-weight:700;border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.btn:disabled{border-color:var(--line);color:var(--muted);cursor:default}
+.rm{appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit;font-size:.74rem;border-radius:8px;padding:4px 8px;cursor:pointer;margin-left:auto}
+ol.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rk{display:grid;grid-template-columns:40px 30px 1fr auto;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 8px 6px 0;position:relative}
+.rk.done{opacity:.55}
+.rk.dragging{z-index:3;box-shadow:0 8px 20px rgba(0,0,0,.25);border-color:var(--accent)}
+.handle{appearance:none;border:0;background:transparent;color:var(--muted);font-size:1.25rem;line-height:1;height:40px;cursor:grab;touch-action:none;border-radius:8px}
+.rk.dragging .handle{cursor:grabbing;color:var(--accent)}
+.rkn{font:700 .85rem var(--f-mono);color:var(--pc);text-align:right;font-variant-numeric:tabular-nums}
+.rkb{min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.rkb b{font-size:.92rem;overflow-wrap:anywhere}
+.rkb span{font-size:.74rem;color:var(--muted)}
+.badge{font-size:.72rem;font-weight:700;color:var(--pc);border:1px solid currentColor;border-radius:999px;padding:0 7px}
+#rank{display:flex;flex-direction:column;gap:12px}
+.rank-h{font-size:.85rem;font-weight:700;margin:0;display:flex;justify-content:space-between;align-items:baseline}
+.rank-h span{font:500 .75rem var(--f-mono);color:var(--muted)}
+.warn{font-size:.8rem;border:1px solid var(--accent);border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.topn{display:inline-flex;align-items:center;gap:4px;font-size:.82rem}
+/* route settings (案D): route tabs up front, start/time folded away */
+.routeTabs{display:grid;grid-template-columns:repeat(3,1fr);background:var(--raise);border-radius:12px;padding:4px;gap:4px}
+.routeTabs button{appearance:none;border:0;background:transparent;border-radius:9px;padding:9px 4px;font:inherit;font-size:.85rem;color:var(--muted);cursor:pointer}
+.routeTabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.desc{display:flex;align-items:center;justify-content:space-between;gap:6px 10px;font-size:.82rem;color:var(--muted);flex-wrap:wrap}
+.topctl{display:inline-flex;align-items:center;gap:6px;font-size:.8rem}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.stepper button{appearance:none;border:0;background:transparent;width:30px;height:28px;font:700 .95rem var(--f-mono);color:var(--muted);cursor:pointer}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper output{min-width:1.6em;text-align:center;font:700 .85rem var(--f-mono);color:var(--ink)}
+.topctl.off .stepper output{color:var(--muted)}
+.sw{appearance:none;width:36px;height:20px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:none;margin:0;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw:checked{background:var(--accent)}
+.sw:checked::after{transform:translateX(16px)}
+/* スタート・時間帯: styled as a tappable control (bordered row + 変更 affordance), not as plain text */
+details.more{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+details.more[open]{border-color:var(--accent)}
+details.more summary{cursor:pointer;list-style:none;display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:10px 12px;border-radius:12px;font-size:.84rem}
+details.more summary:hover{background:var(--raise)}
+details.more summary::-webkit-details-marker{display:none}
+.ms-icon{width:18px;height:18px;flex:none;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ms-item{display:inline-flex;align-items:baseline;gap:5px;min-width:0}
+.ms-k{font-size:.72rem;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.ms-v{font-weight:700;color:var(--ink)}
+.ms-cta{margin-left:auto;display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:700;font-size:.82rem;border:1px solid var(--accent);border-radius:999px;padding:3px 10px}
+.ms-cta::after{content:"";width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .15s}
+details.more[open] .ms-cta::after{transform:translateY(1px) rotate(-135deg)}
+.moreBody{display:flex;flex-direction:column;gap:10px;padding:4px 12px 12px;border-top:1px solid var(--line);margin-top:0}
+.moreBody .field:first-child{padding-top:8px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:.72rem;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:.84rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:disabled{opacity:.4;cursor:default}
+.open-rank{appearance:none;font:inherit;font-weight:700;font-size:.9rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.open-rank::after{content:"›";font-size:1.2rem;line-height:1}
+.open-rank span{margin-left:auto;font:500 .75rem var(--f-mono);color:var(--muted)}
+.route-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rank-link{font-size:.8rem;color:var(--accent);font-weight:700}
+.sheet{position:fixed;inset:0;z-index:10;background:rgba(10,8,25,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet-panel{background:var(--bg);width:100%;max-width:760px;max-height:calc(100% - 32px - env(safe-area-inset-top,0px));border-radius:16px 16px 0 0;display:flex;flex-direction:column;box-shadow:0 -6px 24px rgba(0,0,0,.3)}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.sheet-head h2{margin:0;font-size:1rem;letter-spacing:0;color:var(--ink)}
+.sheet-body{overflow:auto;overscroll-behavior:contain;padding:12px 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+body.locked{overflow:hidden}
+.sharebtns{display:flex;flex-wrap:wrap;gap:8px}
+.btn.ghost{border-color:var(--line);color:var(--ink)}
+.btn.solid{background:var(--accent);color:#fff;padding:8px 16px;font-size:.88rem}
+.pane{display:flex;flex-direction:column;gap:12px}
+.qrwrap{display:flex;flex-direction:column;gap:12px}
+.qr{align-self:center;background:#fff;padding:12px;border-radius:12px;line-height:0}
+.qr img,.qr canvas{width:220px;height:220px;image-rendering:pixelated}
+.copyrow{display:flex;gap:6px}
+.copyrow input,#recvCode{flex:1;min-width:0;font:400 16px var(--f-mono);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.copyrow input{font-size:.8rem}
+#recvCode{width:100%;resize:vertical;font-size:14px}
+.warnText{color:var(--accent)!important}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:.82rem;padding:9px 14px;border-radius:10px;max-width:calc(100% - 32px);z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.foot{display:flex;flex-direction:column;gap:2px;font-size:.72rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.foot span:first-child{font-family:var(--f-mono);color:var(--ink)}
+.reset{appearance:none;background:none;border:0;color:var(--muted);font:inherit;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0}
+/* map */
+.m-frame{fill:none;stroke:var(--hall);stroke-width:4}
+.m-desk{fill:var(--desk);stroke:var(--line);stroke-width:1}
+.m-dn{fill:var(--desk-ink);font:500 9px var(--f-mono)}
+.m-bl{fill:var(--hall);font:700 30px var(--f-body)}
+.m-portal{fill:var(--ok)}
+.m-pt{fill:var(--ok);font:700 17px var(--f-body)}
+.m-route{fill:none;stroke:var(--accent);stroke-width:4;stroke-dasharray:10 7;stroke-linecap:round;opacity:.85}
+.m-portal.m-exit,.m-pt.m-exit{fill:var(--muted)}
+.m-tgt{stroke:var(--surface);stroke-width:2.5}
+.m-tn{fill:#fff;font:700 15px var(--f-mono)}
+.m-tn-s{font-size:11px}
+.m-lead{stroke:var(--muted);stroke-width:1.5}
+.m-queue{fill:var(--raise);stroke:var(--p2);stroke-width:3;stroke-dasharray:10 6}
+.m-qt{fill:var(--p2);font:700 26px var(--f-body);letter-spacing:.1em}
+.m-qpath{fill:none;stroke:var(--p2);stroke-width:3;stroke-dasharray:8 6}
+.m-pulse{fill:none;stroke:var(--accent);stroke-width:4}
+.m-call{fill:var(--ink)}
+.m-callt{fill:var(--bg);font:700 16px var(--f-body)}
+.m-hl{fill:none;stroke:var(--accent);stroke-width:4}
+.m-start{fill:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.m-route{animation:dash 1.4s linear infinite}@keyframes dash{to{stroke-dashoffset:-34}}.m-pulse{animation:pulse 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}@keyframes pulse{0%{opacity:1;transform:scale(.8)}100%{opacity:0;transform:scale(1.8)}}}
+</style>
+<script src="theme.js"></script>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="hd">
+    <h1><span class="lat">M3</span><em>春</em><span class="lat">2027</span> <span class="jp">巡回マップ</span></h1>
+    <div class="sub">2027年4月25日(日) 10:30〜 東京流通センター ・ <span id="count">18</span>サークル</div>
+    </div>
+    <div class="hdbtns">
+      <a class="theme" href="help.html" aria-label="使い方（マニュアル）" title="使い方（マニュアル）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 12h5"/></svg></a>
+      <button class="theme" id="colorBtn" aria-label="テーマ（配色）を選ぶ" title="テーマ（配色）を選ぶ" aria-expanded="false" aria-controls="colorPop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.9 2-2 0-.6-.3-1-.6-1.4-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.2-4-7.5-9-7.5z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="14.5" cy="7" r="1.2"/></svg></button>
+      <button class="theme" id="themeBtn" aria-label="表示モードを切り替え"></button>
+    </div>
+    <div class="colorpop" id="colorPop" hidden role="dialog" aria-label="テーマ"><span class="cp-l">テーマ</span><div class="cp-sw" id="colorSwatches"></div></div>
+  </header>
+  <p class="notice"><b>準備中：</b>M3春2027の出展者・会場配置はまだ発表されていません。発表までは、M3秋2026のサークル一覧と会場マップを仮に使っています。</p>
+
+  <div class="mapdock" id="mapdock">
+  <div class="tabs" role="tablist" id="tabs"></div>
+
+  <div class="mapcard">
+    <div class="mapview">
+    <div class="mapscroll" id="mapscroll"></div>
+    <div class="zoom"><button id="pin" class="pin" aria-pressed="false" title="地図を固定"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 4 4H6l4-4z"/><path d="M12 13v8"/></svg><span>固定</span></button><button id="zout" aria-label="縮小">−</button><button id="zin" aria-label="拡大">＋</button></div>
+    </div>
+    <div class="maphint">
+      <span class="lg"><span class="dot" style="background:var(--p1)"></span>優先順位 上位</span>
+      <span class="lg"><span class="dot" style="background:var(--p2)"></span>中位</span>
+      <span class="lg"><span class="dot" style="background:var(--p3)"></span>下位</span>
+      <span class="lg"><span class="dot" style="background:var(--ok)"></span>入口・エスカレーター／訪問済み</span>
+      <span class="lg"><span class="dot" style="background:var(--muted)"></span>出口</span>
+    </div>
+  </div>
+  </div>
+
+  <section class="panel">
+    <div class="routeTabs" id="modeSeg" role="group" aria-label="ルート"><button data-v="short">最短距離</button><button data-v="flex">近くを寄り道</button><button data-v="strict">順位どおり</button></div>
+    <div class="desc"><span id="modeDesc"></span>
+      <span class="topctl" id="topRow"><input type="checkbox" class="sw" id="topFirst" aria-label="上位を先に回る">上位 <span class="stepper"><button type="button" id="topMinus" aria-label="減らす">−</button><output id="topN">5</output><button type="button" id="topPlus" aria-label="増やす">＋</button></span> 位</span>
+    </div>
+    <button class="open-rank" id="openRank" aria-haspopup="dialog">優先順位を並べ替える<span id="openRankN"></span></button>
+    <details class="more" id="more"><summary id="moreSum">スタート・時間帯</summary>
+      <div class="moreBody">
+        <div class="field"><span>スタート</span><div class="chips" id="startSeg"><button class="chip" data-v="e1s">第一 南入口</button><button class="chip" data-v="e1n">第一 北入口</button><button class="chip" data-v="e2">第二 1F入口</button></div></div>
+        <div class="field"><span>時間帯</span><div class="chips" id="timeSeg"><button class="chip" data-v="am">開場直後</button><button class="chip" data-v="pm">午後</button></div></div>
+        <p class="note" style="margin:0">第一展示場と第二展示場1Fは入口と出口が別です。開場直後は、第一展示場は南入口、第二展示場は西側の待機列に並んでから南西の入口へ入ります。「午後」にすると、第一展示場の北入口と第二展示場の東側の入口を使うルートになります。</p>
+      </div>
+    </details>
+    <div class="summary" id="summary"></div>
+  </section>
+
+  <section>
+    <div class="route-h"><h2>巡回ルート</h2><a href="#rank" class="rank-link">優先順位を並べ替える</a></div>
+    <ol class="route" id="route"></ol>
+  </section>
+  <section class="panel addbox">
+    <h2>ブースを追加</h2>
+    <input type="search" id="q" placeholder="ブース番号（例: コ-21b、T-15ab）" autocomplete="off">
+    <ol class="results" id="results"></ol>
+  </section>
+  <section id="removedSec" hidden>
+    <h2>リストから外したブース</h2>
+    <ol class="results" id="removed"></ol>
+  </section>
+  <section id="doneSec" hidden>
+    <h2>訪問済み</h2>
+    <ol class="route" id="done"></ol>
+  </section>
+  <section class="panel sharebox">
+    <h2>ほかの端末と共有</h2>
+    <p class="note" style="margin:0">PCで作ったリストをスマホで見るときなどに。ブース・優先順位・訪問済み・ルート設定を、そのままほかの端末へ写せます。</p>
+    <div class="sharebtns"><button class="btn" id="shareOut">この端末のデータを送る</button><button class="btn ghost" id="shareIn">コードで受け取る</button></div>
+  </section>
+  <button class="reset" id="reset">訪問済み・パスをリセット</button>
+  <p class="note">データはこの端末のブラウザ内（localStorage）だけに保存され、サーバーには送られません。ほかの人の端末とデータが混ざることはありません。共有は、送る側が作ったQRコード・URL・コードを受け取る側で読み込む方式で、その時点の内容を写すものです（自動では同期しません）。</p>
+  <a class="helplink" href="help.html">使い方（マニュアル）を読む ›</a>
+  <footer class="foot">
+    <span>© 2026–2027 berukichi</span>
+    <span>配置データ: M3 Webカタログ（catalog.m3net.jp/2026f）の会場マップより（M3春2027の会場配置と出展者が発表されるまでは、M3秋2026のデータを仮に使っています）。距離は机の座標から求めた目安です。非公式のファンメイドツールです。</span>
+    <span>このツールは個人が趣味で作ったものです。マップ上の位置がずれていた、表示された順に回ったら目当ての頒布物が売り切れていた、といったことを含め、使ったことで生じた不都合には責任を負いかねます。ごめんなさい。最新の情報は公式カタログや各サークルの告知でご確認ください。</span>
+  </footer>
+</div>
+<div class="sheet" id="rankSheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="rankTitle">
+    <div class="sheet-head"><h2 id="rankTitle">優先順位</h2><button class="btn" id="rankClose">閉じる</button></div>
+    <div class="sheet-body" id="sheetBody">
+      <div class="row"><span class="lbl">並べ方</span>
+        <div class="seg" id="splitSeg"><button data-v="1">フロアごと</button><button data-v="0">まとめて</button></div>
+      </div>
+      <p class="note" style="margin:0" id="splitNote"></p>
+      <div class="warn" id="shortWarn" hidden>いまのルートは「最短距離」で「後回し」がオフなので、1位以外の順位はルートに反映されません。<button class="btn" id="toFlex">「近くを寄り道」に切り替える</button></div>
+      <div id="rank"></div>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="shareSheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <div class="sheet-head"><h2 id="shareTitle">ほかの端末と共有</h2><button class="btn" id="shareClose">閉じる</button></div>
+    <div class="sheet-body">
+      <div id="sendPane" class="pane">
+        <div id="qrWrap" class="qrwrap" hidden>
+          <p class="note" style="margin:0">受け取る端末のカメラでQRコードを読み取ると、このページがデータ付きで開きます。</p>
+          <div id="qr" class="qr" aria-label="共有用QRコード"></div>
+          <div class="field"><span>共有URL</span><div class="copyrow"><input id="shareUrl" readonly aria-label="共有URL"><button class="btn" data-copy="shareUrl">コピー</button></div></div>
+        </div>
+        <div class="field"><span>共有コード</span><div class="copyrow"><input id="shareCode" readonly aria-label="共有コード"><button class="btn" data-copy="shareCode">コピー</button></div>
+          <p class="note" style="margin:0">受け取る端末で「コードで受け取る」を開き、このコードを貼り付けても読み込めます。</p></div>
+        <p class="note" style="margin:0" id="shareSummary"></p>
+      </div>
+      <div id="recvPane" class="pane" hidden>
+        <div class="field"><span>共有コードまたは共有URL</span><textarea id="recvCode" rows="4" placeholder="ここに貼り付け"></textarea></div>
+        <p class="note warnText" id="recvMsg" style="margin:0"></p>
+        <button class="btn solid" id="recvGo">読み込む</button>
+      </div>
+      <div id="confirmPane" class="pane" hidden>
+        <p style="margin:0"><b>受け取ったデータでこの端末の内容を置き換えますか？</b></p>
+        <p class="note" style="margin:0" id="confirmSummary"></p>
+        <p class="note" style="margin:0">この端末にある今のブース・優先順位・訪問済み・ルート設定は上書きされます。地図の拡大率や固定の設定はそのままです。</p>
+        <div class="sharebtns"><button class="btn solid" id="confirmYes">置き換える</button><button class="btn ghost" id="confirmNo">やめる</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const DATA=
+{"desks":[{"id":"か-01","x":273.5,"y":289.5,"width":15,"height":28},{"id":"か-02","x":273.5,"y":317.5,"width":15,"height":28},{"id":"か-03","x":296,"y":331.5,"width":28,"height":15},{"id":"か-04","x":324,"y":331.5,"width":28,"height":15},{"id":"か-05","x":352,"y":331.5,"width":28,"height":15},{"id":"か-06","x":380,"y":331.5,"width":28,"height":15},{"id":"か-07","x":408,"y":331.5,"width":28,"height":15},{"id":"か-08","x":436,"y":331.5,"width":28,"height":15},{"id":"か-09","x":464,"y":331.5,"width":28,"height":15},{"id":"か-10","x":498,"y":331.5,"width":28,"height":15},{"id":"か-11","x":526,"y":331.5,"width":28,"height":15},{"id":"か-12","x":554,"y":331.5,"width":28,"height":15},{"id":"か-13","x":581,"y":331.5,"width":28,"height":15},{"id":"か-14","x":609,"y":331.5,"width":28,"height":15},{"id":"か-15","x":636,"y":331.5,"width":28,"height":15},{"id":"か-16","x":665,"y":331.5,"width":28,"height":15},{"id":"か-17","x":698,"y":331.5,"width":28,"height":15},{"id":"か-18","x":726,"y":331.5,"width":28,"height":15},{"id":"か-19","x":754,"y":331.5,"width":28,"height":15},{"id":"か-20","x":782,"y":331.5,"width":28,"height":15},{"id":"か-21","x":810,"y":331.5,"width":28,"height":15},{"id":"か-22","x":838,"y":331.5,"width":28,"height":15},{"id":"か-23","x":881.5,"y":317.5,"width":15,"height":28},{"id":"か-24","x":881.5,"y":288.5,"width":15,"height":28},{"id":"か-25","x":801.5,"y":289,"width":28,"height":15},{"id":"か-26","x":773.5,"y":289,"width":28,"height":15},{"id":"か-27","x":745,"y":289,"width":28,"height":15},{"id":"か-28","x":715.5,"y":289,"width":28,"height":15},{"id":"か-29","x":687.5,"y":289,"width":28,"height":15},{"id":"か-30","x":659.5,"y":289,"width":28,"height":15},{"id":"か-31","x":632,"y":289,"width":28,"height":15},{"id":"か-32","x":604,"y":289,"width":28,"height":15},{"id":"か-33","x":576,"y":289,"width":28,"height":15},{"id":"か-34","x":548,"y":289,"width":28,"height":15},{"id":"か-35","x":519,"y":289,"width":28,"height":15},{"id":"か-36","x":469.5,"y":289,"width":28,"height":15},{"id":"か-37","x":441.5,"y":289,"width":28,"height":15},{"id":"か-38","x":413.5,"y":289,"width":28,"height":15},{"id":"か-39","x":386,"y":289,"width":28,"height":15},{"id":"か-40","x":358,"y":289,"width":28,"height":15},{"id":"か-41","x":330,"y":289,"width":28,"height":15},{"id":"お-01","x":273.5,"y":396,"width":15,"height":28},{"id":"お-02","x":273.5,"y":424,"width":15,"height":28},{"id":"お-03","x":296,"y":436.5,"width":28,"height":15},{"id":"お-04","x":324,"y":436.5,"width":28,"height":15},{"id":"お-05","x":352,"y":436.5,"width":28,"height":15},{"id":"お-06","x":380,"y":436.5,"width":28,"height":15},{"id":"お-07","x":408,"y":436.5,"width":28,"height":15},{"id":"お-08","x":436,"y":436.5,"width":28,"height":15},{"id":"お-09","x":464,"y":436.5,"width":28,"height":15},{"id":"お-10","x":498.5,"y":436.5,"width":28,"height":15},{"id":"お-11","x":526.5,"y":436.5,"width":28,"height":15},{"id":"お-12","x":554.5,"y":436.5,"width":28,"height":15},{"id":"お-13","x":582.5,"y":436.5,"width":28,"height":15},{"id":"お-14","x":610.5,"y":436.5,"width":28,"height":15},{"id":"お-15","x":638.5,"y":436.5,"width":28,"height":15},{"id":"お-16","x":666.5,"y":436.5,"width":28,"height":15},{"id":"お-17","x":698.5,"y":436.5,"width":28,"height":15},{"id":"お-18","x":726.5,"y":436.5,"width":28,"height":15},{"id":"お-19","x":754.5,"y":436.5,"width":28,"height":15},{"id":"お-20","x":782.5,"y":436.5,"width":28,"height":15},{"id":"お-21","x":810.5,"y":436.5,"width":28,"height":15},{"id":"お-22","x":838.5,"y":436.5,"width":28,"height":15},{"id":"お-23","x":881.5,"y":425,"width":15,"height":28},{"id":"お-24","x":881.5,"y":397,"width":15,"height":28},{"id":"お-25","x":839,"y":396,"width":28,"height":15},{"id":"お-26","x":811,"y":396,"width":28,"height":15},{"id":"お-27","x":782.5,"y":396,"width":28,"height":15},{"id":"お-28","x":735,"y":397,"width":28,"height":15},{"id":"お-29","x":707,"y":397,"width":28,"height":15},{"id":"お-30","x":679,"y":397,"width":28,"height":15},{"id":"お-31","x":651.5,"y":397,"width":28,"height":15},{"id":"お-32","x":623.5,"y":397,"width":28,"height":15},{"id":"お-33","x":595.5,"y":397,"width":28,"height":15},{"id":"お-34","x":554,"y":397,"width":28,"height":15},{"id":"お-35","x":525,"y":397,"width":28,"height":15},{"id":"お-36","x":496,"y":397,"width":28,"height":15},{"id":"お-37","x":468,"y":397,"width":28,"height":15},{"id":"お-38","x":440,"y":397,"width":28,"height":15},{"id":"お-39","x":412.5,"y":397,"width":28,"height":15},{"id":"お-40","x":358,"y":397,"width":28,"height":15},{"id":"お-41","x":330,"y":397,"width":28,"height":15},{"id":"お-42","x":302,"y":397,"width":28,"height":15},{"id":"え-01","x":273,"y":505.5,"width":15,"height":28},{"id":"え-02","x":273,"y":533.5,"width":15,"height":28},{"id":"え-03","x":296,"y":548,"width":28,"height":15},{"id":"え-04","x":324,"y":548,"width":28,"height":15},{"id":"え-05","x":352,"y":548,"width":28,"height":15},{"id":"え-06","x":412,"y":548,"width":28,"height":15},{"id":"え-07","x":440,"y":548,"width":28,"height":15},{"id":"え-08","x":468,"y":548,"width":28,"height":15},{"id":"え-09","x":496,"y":548,"width":28,"height":15},{"id":"え-10","x":524,"y":548,"width":28,"height":15},{"id":"え-11","x":552,"y":548,"width":28,"height":15},{"id":"え-12","x":595,"y":548,"width":28,"height":15},{"id":"え-13","x":623,"y":548,"width":28,"height":15},{"id":"え-14","x":651,"y":548,"width":28,"height":15},{"id":"え-15","x":679,"y":548,"width":28,"height":15},{"id":"え-16","x":707,"y":548,"width":28,"height":15},{"id":"え-17","x":735,"y":548,"width":28,"height":15},{"id":"え-18","x":783,"y":548,"width":28,"height":15},{"id":"え-19","x":811,"y":548,"width":28,"height":15},{"id":"え-20","x":839,"y":548,"width":28,"height":15},{"id":"え-21","x":881.5,"y":535.5,"width":15,"height":28},{"id":"え-22","x":881.5,"y":507.5,"width":15,"height":28},{"id":"え-23","x":839,"y":507.5,"width":28,"height":15},{"id":"え-24","x":811,"y":507.5,"width":28,"height":15},{"id":"え-25","x":783,"y":507.5,"width":28,"height":15},{"id":"え-26","x":755,"y":507.5,"width":28,"height":15},{"id":"え-27","x":727,"y":507.5,"width":28,"height":15},{"id":"え-28","x":699,"y":507.5,"width":28,"height":15},{"id":"え-29","x":666.5,"y":507.5,"width":28,"height":15},{"id":"え-30","x":638.5,"y":507.5,"width":28,"height":15},{"id":"え-31","x":610.5,"y":507.5,"width":28,"height":15},{"id":"え-32","x":582.5,"y":507.5,"width":28,"height":15},{"id":"え-33","x":554.5,"y":507.5,"width":28,"height":15},{"id":"え-34","x":526.5,"y":507.5,"width":28,"height":15},{"id":"え-37","x":436,"y":507.5,"width":28,"height":15},{"id":"え-38","x":408,"y":507.5,"width":28,"height":15},{"id":"え-39","x":380,"y":507.5,"width":28,"height":15},{"id":"え-40","x":352,"y":507.5,"width":28,"height":15},{"id":"え-41","x":324,"y":507.5,"width":28,"height":15},{"id":"え-42","x":296,"y":507.5,"width":28,"height":15},{"id":"え-35","x":497.5,"y":507.5,"width":28,"height":15},{"id":"え-36","x":469.5,"y":507.5,"width":28,"height":15},{"id":"う-01","x":296,"y":598.5,"width":15,"height":28},{"id":"う-02","x":296,"y":626.5,"width":15,"height":28},{"id":"う-03","x":319.5,"y":639.5,"width":28,"height":15},{"id":"う-04","x":347.5,"y":639.5,"width":28,"height":15},{"id":"う-05","x":375.5,"y":639.5,"width":28,"height":15},{"id":"う-06","x":403.5,"y":639.5,"width":28,"height":15},{"id":"う-07","x":431.5,"y":639.5,"width":28,"height":15},{"id":"う-08","x":459.5,"y":639.5,"width":28,"height":15},{"id":"う-09","x":492,"y":639.5,"width":28,"height":15},{"id":"う-10","x":520,"y":639.5,"width":28,"height":15},{"id":"う-11","x":548,"y":639.5,"width":28,"height":15},{"id":"う-12","x":576,"y":639.5,"width":28,"height":15},{"id":"う-13","x":604,"y":639.5,"width":28,"height":15},{"id":"う-14","x":632,"y":639.5,"width":28,"height":15},{"id":"う-15","x":665,"y":639.5,"width":28,"height":15},{"id":"う-16","x":693,"y":639.5,"width":28,"height":15},{"id":"う-17","x":721,"y":639.5,"width":28,"height":15},{"id":"う-18","x":749,"y":639.5,"width":28,"height":15},{"id":"う-19","x":777,"y":639.5,"width":28,"height":15},{"id":"う-20","x":805,"y":639.5,"width":28,"height":15},{"id":"う-21","x":833,"y":639.5,"width":28,"height":15},{"id":"う-22","x":881.5,"y":628.5,"width":15,"height":28},{"id":"う-23","x":881.5,"y":600.5,"width":15,"height":28},{"id":"う-42","x":319.5,"y":600.5,"width":28,"height":15},{"id":"う-41","x":347.5,"y":600.5,"width":28,"height":15},{"id":"う-40","x":375.5,"y":600.5,"width":28,"height":15},{"id":"う-39","x":403.5,"y":600.5,"width":28,"height":15},{"id":"う-38","x":431.5,"y":600.5,"width":28,"height":15},{"id":"う-37","x":459.5,"y":600.5,"width":28,"height":15},{"id":"う-36","x":492,"y":600.5,"width":28,"height":15},{"id":"う-35","x":520,"y":600.5,"width":28,"height":15},{"id":"う-34","x":548,"y":600.5,"width":28,"height":15},{"id":"う-33","x":576,"y":600.5,"width":28,"height":15},{"id":"う-32","x":604,"y":600.5,"width":28,"height":15},{"id":"う-31","x":632,"y":600.5,"width":28,"height":15},{"id":"う-30","x":665,"y":600.5,"width":28,"height":15},{"id":"う-29","x":693,"y":600.5,"width":28,"height":15},{"id":"う-28","x":721,"y":600.5,"width":28,"height":15},{"id":"う-27","x":749,"y":600.5,"width":28,"height":15},{"id":"う-26","x":777,"y":600.5,"width":28,"height":15},{"id":"う-25","x":805,"y":600.5,"width":28,"height":15},{"id":"う-24","x":833,"y":600.5,"width":28,"height":15},{"id":"い-01","x":351,"y":699,"width":15,"height":28},{"id":"い-02","x":351,"y":727,"width":15,"height":28},{"id":"い-03","x":375.5,"y":740,"width":28,"height":15},{"id":"い-04","x":403.5,"y":740,"width":28,"height":15},{"id":"い-05","x":431.5,"y":740,"width":28,"height":15},{"id":"い-06","x":459.5,"y":740,"width":28,"height":15},{"id":"い-07","x":493,"y":740,"width":28,"height":15},{"id":"い-08","x":521,"y":740,"width":28,"height":15},{"id":"い-09","x":549,"y":740,"width":28,"height":15},{"id":"い-10","x":577,"y":740,"width":28,"height":15},{"id":"い-11","x":605,"y":740,"width":28,"height":15},{"id":"い-12","x":633,"y":740,"width":28,"height":15},{"id":"い-13","x":661,"y":740,"width":28,"height":15},{"id":"い-14","x":693,"y":740,"width":28,"height":15},{"id":"い-15","x":721,"y":740,"width":28,"height":15},{"id":"い-16","x":749,"y":740,"width":28,"height":15},{"id":"い-17","x":777,"y":740,"width":28,"height":15},{"id":"い-18","x":805,"y":740,"width":28,"height":15},{"id":"い-19","x":833,"y":740,"width":28,"height":15},{"id":"い-20","x":881.5,"y":726,"width":15,"height":28},{"id":"い-21","x":881.5,"y":698,"width":15,"height":28},{"id":"い-24","x":777.5,"y":699,"width":28,"height":15},{"id":"い-23","x":805.5,"y":699,"width":28,"height":15},{"id":"い-22","x":833.5,"y":699,"width":28,"height":15},{"id":"い-30","x":594,"y":698,"width":28,"height":15},{"id":"い-29","x":622,"y":698,"width":28,"height":15},{"id":"い-28","x":650,"y":698,"width":28,"height":15},{"id":"い-27","x":678,"y":698,"width":28,"height":15},{"id":"い-26","x":706,"y":698,"width":28,"height":15},{"id":"い-25","x":734,"y":698,"width":28,"height":15},{"id":"い-36","x":413.5,"y":698,"width":28,"height":15},{"id":"い-35","x":441.5,"y":698,"width":28,"height":15},{"id":"い-34","x":469.5,"y":698,"width":28,"height":15},{"id":"い-33","x":497.5,"y":698,"width":28,"height":15},{"id":"い-32","x":525.5,"y":698,"width":28,"height":15},{"id":"い-31","x":553.5,"y":698,"width":28,"height":15},{"id":"あ-06","x":657,"y":812.5,"width":28,"height":15},{"id":"あ-05","x":685,"y":812.5,"width":28,"height":15},{"id":"あ-04","x":713,"y":812.5,"width":28,"height":15},{"id":"あ-03","x":741,"y":812.5,"width":28,"height":15},{"id":"あ-02","x":769,"y":812.5,"width":28,"height":15},{"id":"あ-01","x":797,"y":812.5,"width":28,"height":15},{"id":"あ-07","x":628.5,"y":812.5,"width":28,"height":15},{"id":"あ-11","x":507.5,"y":812.5,"width":28,"height":15},{"id":"あ-10","x":535.5,"y":812.5,"width":28,"height":15},{"id":"あ-09","x":563.5,"y":812.5,"width":28,"height":15},{"id":"あ-08","x":591.5,"y":812.5,"width":28,"height":15},{"id":"あ-12","x":479,"y":812.5,"width":28,"height":15},{"id":"あ-13","x":451,"y":812.5,"width":28,"height":15},{"id":"あ-15","x":388,"y":812.5,"width":28,"height":15},{"id":"あ-14","x":416,"y":812.5,"width":28,"height":15},{"id":"あ-16","x":359.5,"y":812.5,"width":28,"height":15},{"id":"あ-17","x":331.5,"y":812.5,"width":28,"height":15},{"id":"シ-01","x":1396,"y":263,"width":15,"height":28},{"id":"シ-02","x":1396,"y":291,"width":15,"height":28},{"id":"シ-03","x":1424,"y":304,"width":28,"height":15},{"id":"シ-04","x":1452,"y":304,"width":28,"height":15},{"id":"シ-05","x":1480,"y":304,"width":28,"height":15},{"id":"シ-06","x":1508,"y":304,"width":28,"height":15},{"id":"シ-07","x":1536,"y":304,"width":28,"height":15},{"id":"シ-08","x":1564,"y":304,"width":28,"height":15},{"id":"シ-09","x":1592,"y":304,"width":28,"height":15},{"id":"シ-10","x":1628,"y":304,"width":28,"height":15},{"id":"シ-11","x":1656,"y":304,"width":28,"height":15},{"id":"シ-12","x":1684,"y":304,"width":28,"height":15},{"id":"シ-13","x":1712,"y":304,"width":28,"height":15},{"id":"シ-14","x":1740,"y":304,"width":28,"height":15},{"id":"シ-15","x":1768,"y":304,"width":28,"height":15},{"id":"シ-16","x":1796,"y":304,"width":28,"height":15},{"id":"シ-17","x":1829,"y":304,"width":28,"height":15},{"id":"シ-18","x":1857,"y":304,"width":28,"height":15},{"id":"シ-19","x":1885,"y":304,"width":28,"height":15},{"id":"シ-20","x":1913,"y":304,"width":28,"height":15},{"id":"シ-21","x":1941,"y":304,"width":28,"height":15},{"id":"シ-22","x":1979.5,"y":290,"width":15,"height":28},{"id":"シ-23","x":1979.5,"y":262,"width":15,"height":28},{"id":"シ-24","x":1940,"y":262,"width":28,"height":15},{"id":"シ-25","x":1912,"y":262,"width":28,"height":15},{"id":"シ-26","x":1884,"y":262,"width":28,"height":15},{"id":"シ-27","x":1856,"y":262,"width":28,"height":15},{"id":"シ-28","x":1828,"y":262,"width":28,"height":15},{"id":"シ-29","x":1794,"y":262,"width":28,"height":15},{"id":"シ-30","x":1766,"y":262,"width":28,"height":15},{"id":"シ-31","x":1738,"y":262,"width":28,"height":15},{"id":"シ-32","x":1710,"y":262,"width":28,"height":15},{"id":"シ-33","x":1682,"y":262,"width":28,"height":15},{"id":"シ-34","x":1654,"y":262,"width":28,"height":15},{"id":"シ-35","x":1593,"y":262,"width":28,"height":15},{"id":"シ-36","x":1565,"y":262,"width":28,"height":15},{"id":"シ-37","x":1537,"y":262,"width":28,"height":15},{"id":"シ-38","x":1509,"y":262,"width":28,"height":15},{"id":"シ-39","x":1481,"y":262,"width":28,"height":15},{"id":"シ-40","x":1453,"y":262,"width":28,"height":15},{"id":"シ-41","x":1425,"y":262,"width":28,"height":15},{"id":"サ-01","x":1396,"y":367,"width":15,"height":28},{"id":"サ-02","x":1396,"y":395,"width":15,"height":28},{"id":"サ-03","x":1425,"y":409,"width":28,"height":15},{"id":"サ-04","x":1453,"y":409,"width":28,"height":15},{"id":"サ-05","x":1481,"y":409,"width":28,"height":15},{"id":"サ-06","x":1509,"y":409,"width":28,"height":15},{"id":"サ-07","x":1537,"y":409,"width":28,"height":15},{"id":"サ-08","x":1565,"y":409,"width":28,"height":15},{"id":"サ-09","x":1593,"y":409,"width":28,"height":15},{"id":"サ-10","x":1629,"y":409,"width":28,"height":15},{"id":"サ-11","x":1657,"y":409,"width":28,"height":15},{"id":"サ-12","x":1685,"y":409,"width":28,"height":15},{"id":"サ-13","x":1713,"y":409,"width":28,"height":15},{"id":"サ-14","x":1741,"y":409,"width":28,"height":15},{"id":"サ-15","x":1769,"y":409,"width":28,"height":15},{"id":"サ-16","x":1797,"y":409,"width":28,"height":15},{"id":"サ-17","x":1830,"y":409,"width":28,"height":15},{"id":"サ-18","x":1858,"y":409,"width":28,"height":15},{"id":"サ-19","x":1886,"y":409,"width":28,"height":15},{"id":"サ-20","x":1914,"y":409,"width":28,"height":15},{"id":"サ-21","x":1942,"y":409,"width":28,"height":15},{"id":"サ-22","x":1979.5,"y":395,"width":15,"height":28},{"id":"サ-23","x":1979.5,"y":367,"width":15,"height":28},{"id":"サ-24","x":1940,"y":365,"width":28,"height":15},{"id":"サ-25","x":1912,"y":365,"width":28,"height":15},{"id":"サ-26","x":1884,"y":365,"width":28,"height":15},{"id":"サ-27","x":1856,"y":365,"width":28,"height":15},{"id":"サ-28","x":1828,"y":365,"width":28,"height":15},{"id":"サ-29","x":1794,"y":365,"width":28,"height":15},{"id":"サ-30","x":1766,"y":365,"width":28,"height":15},{"id":"サ-31","x":1738,"y":365,"width":28,"height":15},{"id":"サ-32","x":1710,"y":365,"width":28,"height":15},{"id":"サ-33","x":1682,"y":365,"width":28,"height":15},{"id":"サ-34","x":1654,"y":365,"width":28,"height":15},{"id":"サ-35","x":1626,"y":365,"width":28,"height":15},{"id":"サ-36","x":1593,"y":365,"width":28,"height":15},{"id":"サ-37","x":1565,"y":365,"width":28,"height":15},{"id":"サ-38","x":1537,"y":365,"width":28,"height":15},{"id":"サ-39","x":1509,"y":365,"width":28,"height":15},{"id":"サ-40","x":1481,"y":365,"width":28,"height":15},{"id":"サ-41","x":1453,"y":365,"width":28,"height":15},{"id":"サ-42","x":1425,"y":365,"width":28,"height":15},{"id":"コ-01","x":1396,"y":490.5,"width":15,"height":28},{"id":"コ-02","x":1396,"y":518.5,"width":15,"height":28},{"id":"コ-03","x":1425,"y":532.5,"width":28,"height":15},{"id":"コ-04","x":1453,"y":532.5,"width":28,"height":15},{"id":"コ-05","x":1481,"y":532.5,"width":28,"height":15},{"id":"コ-06","x":1530,"y":532.5,"width":28,"height":15},{"id":"コ-07","x":1558,"y":532.5,"width":28,"height":15},{"id":"コ-08","x":1586,"y":532.5,"width":28,"height":15},{"id":"コ-09","x":1614,"y":532.5,"width":28,"height":15},{"id":"コ-10","x":1642,"y":532.5,"width":28,"height":15},{"id":"コ-11","x":1670,"y":532.5,"width":28,"height":15},{"id":"コ-12","x":1712,"y":533,"width":28,"height":15},{"id":"コ-13","x":1740,"y":533,"width":28,"height":15},{"id":"コ-14","x":1768,"y":533,"width":28,"height":15},{"id":"コ-15","x":1796,"y":533,"width":28,"height":15},{"id":"コ-16","x":1824,"y":533,"width":28,"height":15},{"id":"コ-17","x":1852,"y":533,"width":28,"height":15},{"id":"コ-18","x":1911,"y":533,"width":28,"height":15},{"id":"コ-19","x":1939,"y":533,"width":28,"height":15},{"id":"コ-20","x":1976.5,"y":519.5,"width":15,"height":28},{"id":"コ-21","x":1976.5,"y":491.5,"width":15,"height":28},{"id":"コ-22","x":1940,"y":492.5,"width":28,"height":15},{"id":"コ-23","x":1912,"y":492.5,"width":28,"height":15},{"id":"コ-24","x":1884,"y":492.5,"width":28,"height":15},{"id":"コ-25","x":1856,"y":492.5,"width":28,"height":15},{"id":"コ-26","x":1828,"y":492.5,"width":28,"height":15},{"id":"コ-27","x":1794,"y":492.5,"width":28,"height":15},{"id":"コ-28","x":1766,"y":492.5,"width":28,"height":15},{"id":"コ-29","x":1738,"y":492.5,"width":28,"height":15},{"id":"コ-30","x":1710,"y":492.5,"width":28,"height":15},{"id":"コ-31","x":1682,"y":492.5,"width":28,"height":15},{"id":"コ-32","x":1654,"y":492.5,"width":28,"height":15},{"id":"コ-33","x":1626,"y":492.5,"width":28,"height":15},{"id":"コ-34","x":1593,"y":492.5,"width":28,"height":15},{"id":"コ-35","x":1565,"y":492.5,"width":28,"height":15},{"id":"コ-36","x":1537,"y":492.5,"width":28,"height":15},{"id":"コ-37","x":1509,"y":492.5,"width":28,"height":15},{"id":"コ-38","x":1481,"y":492.5,"width":28,"height":15},{"id":"コ-39","x":1453,"y":492.5,"width":28,"height":15},{"id":"コ-40","x":1425,"y":492.5,"width":28,"height":15},{"id":"ケ-01","x":1396,"y":575,"width":15,"height":28},{"id":"ケ-02","x":1396,"y":603,"width":15,"height":28},{"id":"ケ-03","x":1425,"y":614.5,"width":28,"height":15},{"id":"ケ-04","x":1453,"y":614.5,"width":28,"height":15},{"id":"ケ-05","x":1481,"y":614.5,"width":28,"height":15},{"id":"ケ-06","x":1509,"y":614.5,"width":28,"height":15},{"id":"ケ-07","x":1537,"y":614.5,"width":28,"height":15},{"id":"ケ-08","x":1565,"y":614.5,"width":28,"height":15},{"id":"ケ-09","x":1593,"y":614.5,"width":28,"height":15},{"id":"ケ-10","x":1629,"y":614.5,"width":28,"height":15},{"id":"ケ-11","x":1657,"y":614.5,"width":28,"height":15},{"id":"ケ-12","x":1685,"y":614.5,"width":28,"height":15},{"id":"ケ-13","x":1713,"y":614.5,"width":28,"height":15},{"id":"ケ-14","x":1741,"y":614.5,"width":28,"height":15},{"id":"ケ-15","x":1769,"y":614.5,"width":28,"height":15},{"id":"ケ-16","x":1797,"y":614.5,"width":28,"height":15},{"id":"ケ-17","x":1830,"y":614.5,"width":28,"height":15},{"id":"ケ-18","x":1858,"y":614.5,"width":28,"height":15},{"id":"ケ-19","x":1886,"y":614.5,"width":28,"height":15},{"id":"ケ-20","x":1914,"y":614.5,"width":28,"height":15},{"id":"ケ-21","x":1942,"y":614.5,"width":28,"height":15},{"id":"ケ-22","x":1976.5,"y":600,"width":15,"height":28},{"id":"ケ-23","x":1976.5,"y":572,"width":15,"height":28},{"id":"ケ-24","x":1940,"y":572,"width":28,"height":15},{"id":"ケ-25","x":1912,"y":572,"width":28,"height":15},{"id":"ケ-26","x":1884,"y":572,"width":28,"height":15},{"id":"ケ-27","x":1856,"y":572,"width":28,"height":15},{"id":"ケ-28","x":1828,"y":572,"width":28,"height":15},{"id":"ケ-29","x":1794,"y":572,"width":28,"height":15},{"id":"ケ-30","x":1766,"y":572,"width":28,"height":15},{"id":"ケ-31","x":1738,"y":572,"width":28,"height":15},{"id":"ケ-32","x":1710,"y":572,"width":28,"height":15},{"id":"ケ-33","x":1682,"y":572,"width":28,"height":15},{"id":"ケ-34","x":1654,"y":572,"width":28,"height":15},{"id":"ケ-35","x":1626,"y":572,"width":28,"height":15},{"id":"ケ-36","x":1593,"y":572,"width":28,"height":15},{"id":"ケ-37","x":1565,"y":572,"width":28,"height":15},{"id":"ケ-38","x":1537,"y":572,"width":28,"height":15},{"id":"ケ-39","x":1509,"y":572,"width":28,"height":15},{"id":"ケ-40","x":1481,"y":572,"width":28,"height":15},{"id":"ケ-41","x":1453,"y":572,"width":28,"height":15},{"id":"ケ-42","x":1425,"y":572,"width":28,"height":15},{"id":"ク-01","x":1463,"y":678,"width":15,"height":28},{"id":"ク-02","x":1463,"y":706,"width":15,"height":28},{"id":"ク-03","x":1485,"y":719,"width":28,"height":15},{"id":"ク-04","x":1513,"y":719,"width":28,"height":15},{"id":"ク-05","x":1541,"y":719,"width":28,"height":15},{"id":"ク-06","x":1569,"y":719,"width":28,"height":15},{"id":"ク-07","x":1612,"y":719,"width":28,"height":15},{"id":"ク-08","x":1640,"y":719,"width":28,"height":15},{"id":"ク-09","x":1668,"y":719,"width":28,"height":15},{"id":"ク-10","x":1696,"y":719,"width":28,"height":15},{"id":"ク-11","x":1724,"y":719,"width":28,"height":15},{"id":"ク-12","x":1752,"y":719,"width":28,"height":15},{"id":"ク-13","x":1780,"y":719,"width":28,"height":15},{"id":"ク-14","x":1824,"y":719,"width":28,"height":15},{"id":"ク-15","x":1852,"y":719,"width":28,"height":15},{"id":"ク-16","x":1880,"y":719,"width":28,"height":15},{"id":"ク-17","x":1908,"y":719,"width":28,"height":15},{"id":"ク-18","x":1936,"y":719,"width":28,"height":15},{"id":"ク-19","x":1976.5,"y":705,"width":15,"height":28},{"id":"ク-20","x":1976.5,"y":677,"width":15,"height":28},{"id":"ク-21","x":1936,"y":677,"width":28,"height":15},{"id":"ク-22","x":1908,"y":677,"width":28,"height":15},{"id":"ク-23","x":1880,"y":677,"width":28,"height":15},{"id":"ク-24","x":1852,"y":677,"width":28,"height":15},{"id":"ク-25","x":1824,"y":677,"width":28,"height":15},{"id":"ク-26","x":1780,"y":677,"width":28,"height":15},{"id":"ク-27","x":1752,"y":677,"width":28,"height":15},{"id":"ク-28","x":1724,"y":677,"width":28,"height":15},{"id":"ク-29","x":1696,"y":677,"width":28,"height":15},{"id":"ク-30","x":1668,"y":677,"width":28,"height":15},{"id":"ク-31","x":1640,"y":677,"width":28,"height":15},{"id":"ク-32","x":1612,"y":677,"width":28,"height":15},{"id":"ク-33","x":1569,"y":678,"width":28,"height":15},{"id":"ク-34","x":1541,"y":678,"width":28,"height":15},{"id":"ク-35","x":1513,"y":678,"width":28,"height":15},{"id":"ク-36","x":1485,"y":678,"width":28,"height":15},{"id":"キ-13","x":1577,"y":800,"width":28,"height":15},{"id":"キ-12","x":1605,"y":800,"width":28,"height":15},{"id":"キ-11","x":1633,"y":800,"width":28,"height":15},{"id":"キ-10","x":1661,"y":800,"width":28,"height":15},{"id":"キ-09","x":1689,"y":800,"width":28,"height":15},{"id":"キ-08","x":1729,"y":800,"width":28,"height":15},{"id":"キ-07","x":1757,"y":800,"width":28,"height":15},{"id":"キ-06","x":1785,"y":800,"width":28,"height":15},{"id":"キ-05","x":1813,"y":800,"width":28,"height":15},{"id":"キ-04","x":1841,"y":800,"width":28,"height":15},{"id":"キ-03","x":1869,"y":800,"width":28,"height":15},{"id":"キ-02","x":1897,"y":800,"width":28,"height":15},{"id":"キ-01","x":1925,"y":800,"width":28,"height":15},{"id":"B-02","x":346.5,"y":1131.5,"width":28,"height":15},{"id":"B-01","x":374.5,"y":1131.5,"width":28,"height":15},{"id":"B-03","x":347.5,"y":1151,"width":15,"height":28},{"id":"B-04","x":347.5,"y":1178,"width":15,"height":28},{"id":"B-05","x":347.5,"y":1207,"width":15,"height":28},{"id":"B-06","x":347.5,"y":1236,"width":15,"height":28},{"id":"B-07","x":347.5,"y":1263,"width":15,"height":28},{"id":"B-08","x":347.5,"y":1312,"width":15,"height":28},{"id":"B-09","x":347.5,"y":1340,"width":15,"height":28},{"id":"B-10","x":347.5,"y":1368,"width":15,"height":28},{"id":"B-11","x":347.5,"y":1396,"width":15,"height":28},{"id":"B-12","x":347.5,"y":1424,"width":15,"height":28},{"id":"B-13","x":347.5,"y":1458.5,"width":28,"height":15},{"id":"B-14","x":375.5,"y":1458.5,"width":28,"height":15},{"id":"B-15","x":388,"y":1424,"width":15,"height":28},{"id":"B-16","x":388,"y":1396,"width":15,"height":28},{"id":"B-17","x":388,"y":1368,"width":15,"height":28},{"id":"B-18","x":388,"y":1340,"width":15,"height":28},{"id":"B-19","x":388,"y":1312,"width":15,"height":28},{"id":"B-20","x":388,"y":1263,"width":15,"height":28},{"id":"B-21","x":388,"y":1235,"width":15,"height":28},{"id":"B-22","x":388,"y":1207,"width":15,"height":28},{"id":"B-23","x":388,"y":1179,"width":15,"height":28},{"id":"B-24","x":388,"y":1151,"width":15,"height":28},{"id":"C-02","x":454,"y":1131,"width":28,"height":15},{"id":"C-01","x":482,"y":1131,"width":28,"height":15},{"id":"C-03","x":454,"y":1152,"width":15,"height":28},{"id":"C-04","x":454,"y":1180,"width":15,"height":28},{"id":"C-05","x":454,"y":1208,"width":15,"height":28},{"id":"C-06","x":454,"y":1236,"width":15,"height":28},{"id":"C-07","x":454,"y":1264,"width":15,"height":28},{"id":"C-08","x":454,"y":1312,"width":15,"height":28},{"id":"C-09","x":454,"y":1341,"width":15,"height":28},{"id":"C-10","x":454,"y":1369,"width":15,"height":28},{"id":"C-11","x":454,"y":1397,"width":15,"height":28},{"id":"C-12","x":454,"y":1425,"width":15,"height":28},{"id":"C-13","x":454,"y":1458.5,"width":28,"height":15},{"id":"C-14","x":482,"y":1458.5,"width":28,"height":15},{"id":"C-15","x":495,"y":1424,"width":15,"height":28},{"id":"C-16","x":495,"y":1396,"width":15,"height":28},{"id":"C-17","x":495,"y":1368,"width":15,"height":28},{"id":"C-18","x":495,"y":1340,"width":15,"height":28},{"id":"C-19","x":495,"y":1312,"width":15,"height":28},{"id":"C-20","x":495,"y":1264,"width":15,"height":28},{"id":"C-21","x":495,"y":1236,"width":15,"height":28},{"id":"C-22","x":495,"y":1208,"width":15,"height":28},{"id":"C-23","x":495,"y":1180,"width":15,"height":28},{"id":"C-24","x":495,"y":1152,"width":15,"height":28},{"id":"D-02","x":562,"y":1130,"width":28,"height":15},{"id":"D-01","x":590,"y":1130,"width":28,"height":15},{"id":"D-03","x":562,"y":1152,"width":15,"height":28},{"id":"D-04","x":562,"y":1180,"width":15,"height":28},{"id":"D-05","x":562,"y":1208,"width":15,"height":28},{"id":"D-06","x":562,"y":1236,"width":15,"height":28},{"id":"D-07","x":562,"y":1264,"width":15,"height":28},{"id":"D-08","x":562,"y":1311,"width":15,"height":28},{"id":"D-09","x":562,"y":1339,"width":15,"height":28},{"id":"D-10","x":562,"y":1367,"width":15,"height":28},{"id":"D-11","x":562,"y":1395,"width":15,"height":28},{"id":"D-12","x":562,"y":1423.5,"width":15,"height":28},{"id":"D-13","x":562,"y":1459,"width":28,"height":15},{"id":"D-14","x":590,"y":1459,"width":28,"height":15},{"id":"D-15","x":603,"y":1423,"width":15,"height":28},{"id":"D-16","x":603,"y":1395,"width":15,"height":28},{"id":"D-17","x":603,"y":1367,"width":15,"height":28},{"id":"D-18","x":603,"y":1339,"width":15,"height":28},{"id":"D-19","x":603,"y":1311,"width":15,"height":28},{"id":"D-20","x":603,"y":1264,"width":15,"height":28},{"id":"D-21","x":603,"y":1236,"width":15,"height":28},{"id":"D-22","x":603,"y":1208,"width":15,"height":28},{"id":"D-23","x":603,"y":1180,"width":15,"height":28},{"id":"D-24","x":603,"y":1152,"width":15,"height":28},{"id":"F-02","x":772.5,"y":1129,"width":28,"height":15},{"id":"F-01","x":800.5,"y":1129,"width":28,"height":15},{"id":"F-03","x":772.5,"y":1152,"width":15,"height":28},{"id":"F-04","x":772.5,"y":1181,"width":15,"height":28},{"id":"F-05","x":772.5,"y":1209,"width":15,"height":28},{"id":"F-06","x":772.5,"y":1237,"width":15,"height":28},{"id":"F-07","x":772.5,"y":1265,"width":15,"height":28},{"id":"F-08","x":772.5,"y":1311,"width":15,"height":28},{"id":"F-09","x":772.5,"y":1339,"width":15,"height":28},{"id":"F-10","x":772.5,"y":1367,"width":15,"height":28},{"id":"F-11","x":772.5,"y":1395,"width":15,"height":28},{"id":"F-12","x":772.5,"y":1423.5,"width":15,"height":28},{"id":"F-13","x":772.5,"y":1458.5,"width":28,"height":15},{"id":"F-14","x":800.5,"y":1458.5,"width":28,"height":15},{"id":"F-15","x":814.5,"y":1423,"width":15,"height":28},{"id":"F-16","x":814.5,"y":1395,"width":15,"height":28},{"id":"F-17","x":814.5,"y":1367,"width":15,"height":28},{"id":"F-18","x":814.5,"y":1339,"width":15,"height":28},{"id":"F-19","x":814.5,"y":1311,"width":15,"height":28},{"id":"F-20","x":813.5,"y":1265,"width":15,"height":28},{"id":"F-21","x":813.5,"y":1237,"width":15,"height":28},{"id":"F-22","x":813.5,"y":1209,"width":15,"height":28},{"id":"F-23","x":813.5,"y":1181,"width":15,"height":28},{"id":"F-24","x":813.5,"y":1153,"width":15,"height":28},{"id":"G-02","x":878,"y":1129,"width":28,"height":15},{"id":"G-01","x":906,"y":1129,"width":28,"height":15},{"id":"G-03","x":878,"y":1152,"width":15,"height":28},{"id":"G-04","x":878,"y":1180,"width":15,"height":28},{"id":"G-05","x":878,"y":1208,"width":15,"height":28},{"id":"G-06","x":878,"y":1235,"width":15,"height":28},{"id":"G-07","x":878,"y":1264,"width":15,"height":28},{"id":"G-08","x":878,"y":1311,"width":15,"height":28},{"id":"G-09","x":878,"y":1339,"width":15,"height":28},{"id":"G-10","x":878,"y":1367,"width":15,"height":28},{"id":"G-11","x":878,"y":1395,"width":15,"height":28},{"id":"G-12","x":878,"y":1423,"width":15,"height":28},{"id":"G-13","x":878,"y":1458.5,"width":28,"height":15},{"id":"G-14","x":906,"y":1458.5,"width":28,"height":15},{"id":"G-15","x":919,"y":1423,"width":15,"height":28},{"id":"G-16","x":919,"y":1395,"width":15,"height":28},{"id":"G-17","x":919,"y":1367,"width":15,"height":28},{"id":"G-18","x":919,"y":1339,"width":15,"height":28},{"id":"G-19","x":919,"y":1311,"width":15,"height":28},{"id":"G-20","x":919,"y":1264,"width":15,"height":28},{"id":"G-21","x":919,"y":1236,"width":15,"height":28},{"id":"G-22","x":919,"y":1208,"width":15,"height":28},{"id":"G-23","x":919,"y":1180,"width":15,"height":28},{"id":"G-24","x":919,"y":1152,"width":15,"height":28},{"id":"H-02","x":982.5,"y":1130,"width":28,"height":15},{"id":"H-01","x":1010.5,"y":1130,"width":28,"height":15},{"id":"H-03","x":982.5,"y":1152,"width":15,"height":28},{"id":"H-04","x":982.5,"y":1180,"width":15,"height":28},{"id":"H-05","x":982.5,"y":1208,"width":15,"height":28},{"id":"H-06","x":982.5,"y":1236,"width":15,"height":28},{"id":"H-07","x":982.5,"y":1264,"width":15,"height":28},{"id":"H-08","x":982.5,"y":1311,"width":15,"height":28},{"id":"H-09","x":982.5,"y":1339,"width":15,"height":28},{"id":"H-10","x":982.5,"y":1367,"width":15,"height":28},{"id":"H-11","x":982.5,"y":1395,"width":15,"height":28},{"id":"H-12","x":982.5,"y":1424,"width":15,"height":28},{"id":"H-13","x":982.5,"y":1458.5,"width":28,"height":15},{"id":"H-14","x":1010.5,"y":1458.5,"width":28,"height":15},{"id":"H-15","x":1023.5,"y":1423,"width":15,"height":28},{"id":"H-16","x":1023.5,"y":1395,"width":15,"height":28},{"id":"H-17","x":1023.5,"y":1367,"width":15,"height":28},{"id":"H-18","x":1023.5,"y":1339,"width":15,"height":28},{"id":"H-19","x":1023.5,"y":1311,"width":15,"height":28},{"id":"H-20","x":1023.5,"y":1264,"width":15,"height":28},{"id":"H-21","x":1023.5,"y":1236,"width":15,"height":28},{"id":"H-22","x":1023.5,"y":1208,"width":15,"height":28},{"id":"H-23","x":1023.5,"y":1180,"width":15,"height":28},{"id":"H-24","x":1023.5,"y":1152,"width":15,"height":28},{"id":"J-02","x":1195,"y":1129,"width":28,"height":15},{"id":"J-01","x":1223,"y":1129,"width":28,"height":15},{"id":"J-03","x":1195,"y":1153,"width":15,"height":28},{"id":"J-04","x":1195,"y":1181,"width":15,"height":28},{"id":"J-05","x":1195,"y":1209,"width":15,"height":28},{"id":"J-06","x":1195,"y":1237,"width":15,"height":28},{"id":"J-07","x":1195,"y":1265,"width":15,"height":28},{"id":"J-08","x":1195,"y":1311.5,"width":15,"height":28},{"id":"J-09","x":1195,"y":1339.5,"width":15,"height":28},{"id":"J-10","x":1195,"y":1367.5,"width":15,"height":28},{"id":"J-11","x":1195,"y":1396.5,"width":15,"height":28},{"id":"J-12","x":1195,"y":1425,"width":15,"height":28},{"id":"J-13","x":1195,"y":1459,"width":28,"height":15},{"id":"J-14","x":1223,"y":1459,"width":28,"height":15},{"id":"J-15","x":1236,"y":1424,"width":15,"height":28},{"id":"J-16","x":1236,"y":1396,"width":15,"height":28},{"id":"J-17","x":1236,"y":1368,"width":15,"height":28},{"id":"J-18","x":1236,"y":1340,"width":15,"height":28},{"id":"J-19","x":1236,"y":1312,"width":15,"height":28},{"id":"J-20","x":1236,"y":1264,"width":15,"height":28},{"id":"J-21","x":1236,"y":1236,"width":15,"height":28},{"id":"J-22","x":1236,"y":1208,"width":15,"height":28},{"id":"J-23","x":1236,"y":1180,"width":15,"height":28},{"id":"J-24","x":1236,"y":1152,"width":15,"height":28},{"id":"K-02","x":1301,"y":1129,"width":28,"height":15},{"id":"K-01","x":1329,"y":1129,"width":28,"height":15},{"id":"K-03","x":1301,"y":1152,"width":15,"height":28},{"id":"K-04","x":1301,"y":1180,"width":15,"height":28},{"id":"K-05","x":1301,"y":1208,"width":15,"height":28},{"id":"K-06","x":1301,"y":1236,"width":15,"height":28},{"id":"K-07","x":1301,"y":1265,"width":15,"height":28},{"id":"K-08","x":1301,"y":1312,"width":15,"height":28},{"id":"K-09","x":1301,"y":1340,"width":15,"height":28},{"id":"K-10","x":1301,"y":1368,"width":15,"height":28},{"id":"K-11","x":1301,"y":1396,"width":15,"height":28},{"id":"K-12","x":1301,"y":1424,"width":15,"height":28},{"id":"K-13","x":1301,"y":1459,"width":28,"height":15},{"id":"K-14","x":1329,"y":1459,"width":28,"height":15},{"id":"K-15","x":1342,"y":1424,"width":15,"height":28},{"id":"K-16","x":1342,"y":1396,"width":15,"height":28},{"id":"K-17","x":1342,"y":1368,"width":15,"height":28},{"id":"K-18","x":1342,"y":1340,"width":15,"height":28},{"id":"K-19","x":1342,"y":1312,"width":15,"height":28},{"id":"K-20","x":1342,"y":1265,"width":15,"height":28},{"id":"K-21","x":1342,"y":1237,"width":15,"height":28},{"id":"K-22","x":1342,"y":1209,"width":15,"height":28},{"id":"K-23","x":1342,"y":1181,"width":15,"height":28},{"id":"K-24","x":1342,"y":1153,"width":15,"height":28},{"id":"L-02","x":1409,"y":1129,"width":28,"height":15},{"id":"L-01","x":1437,"y":1129,"width":28,"height":15},{"id":"L-03","x":1409,"y":1152,"width":15,"height":28},{"id":"L-04","x":1409,"y":1180,"width":15,"height":28},{"id":"L-05","x":1409,"y":1208,"width":15,"height":28},{"id":"L-06","x":1409,"y":1236,"width":15,"height":28},{"id":"L-07","x":1409,"y":1264,"width":15,"height":28},{"id":"L-08","x":1409,"y":1312,"width":15,"height":28},{"id":"L-09","x":1409,"y":1339,"width":15,"height":28},{"id":"L-10","x":1409,"y":1367,"width":15,"height":28},{"id":"L-11","x":1409,"y":1395,"width":15,"height":28},{"id":"L-12","x":1409,"y":1423,"width":15,"height":28},{"id":"L-13","x":1409,"y":1458.5,"width":28,"height":15},{"id":"L-14","x":1437,"y":1458.5,"width":28,"height":15},{"id":"L-15","x":1450,"y":1423,"width":15,"height":28},{"id":"L-16","x":1450,"y":1395,"width":15,"height":28},{"id":"L-17","x":1450,"y":1367,"width":15,"height":28},{"id":"L-18","x":1450,"y":1339,"width":15,"height":28},{"id":"L-19","x":1450,"y":1311,"width":15,"height":28},{"id":"L-20","x":1450,"y":1264,"width":15,"height":28},{"id":"L-21","x":1450,"y":1236,"width":15,"height":28},{"id":"L-22","x":1450,"y":1208,"width":15,"height":28},{"id":"L-23","x":1450,"y":1180,"width":15,"height":28},{"id":"L-24","x":1450,"y":1152,"width":15,"height":28},{"id":"P-02","x":1832,"y":1128,"width":28,"height":15},{"id":"P-01","x":1860,"y":1128,"width":28,"height":15},{"id":"P-03","x":1832,"y":1152,"width":15,"height":28},{"id":"P-04","x":1832,"y":1180,"width":15,"height":28},{"id":"P-05","x":1832,"y":1208,"width":15,"height":28},{"id":"P-06","x":1832,"y":1237,"width":15,"height":28},{"id":"P-07","x":1832,"y":1264,"width":15,"height":28},{"id":"P-08","x":1832,"y":1311,"width":15,"height":28},{"id":"P-09","x":1832,"y":1340,"width":15,"height":28},{"id":"P-10","x":1832,"y":1367,"width":15,"height":28},{"id":"P-11","x":1832,"y":1395,"width":15,"height":28},{"id":"P-12","x":1832,"y":1423,"width":15,"height":28},{"id":"P-13","x":1832,"y":1459,"width":28,"height":15},{"id":"P-14","x":1860,"y":1459,"width":28,"height":15},{"id":"P-15","x":1873,"y":1424,"width":15,"height":28},{"id":"P-16","x":1873,"y":1396,"width":15,"height":28},{"id":"P-17","x":1873,"y":1368,"width":15,"height":28},{"id":"P-18","x":1873,"y":1340,"width":15,"height":28},{"id":"P-19","x":1873,"y":1312,"width":15,"height":28},{"id":"P-20","x":1873.5,"y":1264,"width":15,"height":28},{"id":"P-21","x":1873.5,"y":1236,"width":15,"height":28},{"id":"P-22","x":1873.5,"y":1208,"width":15,"height":28},{"id":"P-23","x":1873.5,"y":1180,"width":15,"height":28},{"id":"P-24","x":1873.5,"y":1152,"width":15,"height":28},{"id":"Q-02","x":1938.5,"y":1128,"width":28,"height":15},{"id":"Q-01","x":1966.5,"y":1128,"width":28,"height":15},{"id":"Q-03","x":1939,"y":1152,"width":15,"height":28},{"id":"Q-04","x":1939,"y":1180,"width":15,"height":28},{"id":"Q-05","x":1939,"y":1209,"width":15,"height":28},{"id":"Q-06","x":1939,"y":1236,"width":15,"height":28},{"id":"Q-07","x":1939,"y":1264,"width":15,"height":28},{"id":"Q-08","x":1939,"y":1312,"width":15,"height":28},{"id":"Q-09","x":1939,"y":1340,"width":15,"height":28},{"id":"Q-10","x":1939,"y":1368,"width":15,"height":28},{"id":"Q-11","x":1939,"y":1396,"width":15,"height":28},{"id":"Q-12","x":1939,"y":1424,"width":15,"height":28},{"id":"Q-13","x":1938.5,"y":1458.5,"width":28,"height":15},{"id":"Q-14","x":1966.5,"y":1458.5,"width":28,"height":15},{"id":"Q-15","x":1979.5,"y":1424,"width":15,"height":28},{"id":"Q-16","x":1979.5,"y":1396,"width":15,"height":28},{"id":"Q-17","x":1979.5,"y":1368,"width":15,"height":28},{"id":"Q-18","x":1979.5,"y":1340,"width":15,"height":28},{"id":"Q-19","x":1979.5,"y":1312,"width":15,"height":28},{"id":"Q-20","x":1979.5,"y":1264,"width":15,"height":28},{"id":"Q-21","x":1979.5,"y":1236,"width":15,"height":28},{"id":"Q-22","x":1979.5,"y":1208,"width":15,"height":28},{"id":"Q-23","x":1979.5,"y":1180,"width":15,"height":28},{"id":"Q-24","x":1979.5,"y":1152,"width":15,"height":28},{"id":"V-01","x":282,"y":1054.5,"width":28,"height":15},{"id":"V-02","x":310,"y":1054.5,"width":28,"height":15},{"id":"V-03","x":338,"y":1054.5,"width":28,"height":15},{"id":"V-04","x":366,"y":1054.5,"width":28,"height":15},{"id":"V-05","x":394,"y":1054.5,"width":28,"height":15},{"id":"V-06","x":434,"y":1054.5,"width":28,"height":15},{"id":"V-07","x":462,"y":1054.5,"width":28,"height":15},{"id":"V-08","x":490,"y":1054.5,"width":28,"height":15},{"id":"V-09","x":518,"y":1054.5,"width":28,"height":15},{"id":"V-10","x":546,"y":1054.5,"width":28,"height":15},{"id":"V-11","x":703.5,"y":1054.5,"width":28,"height":15},{"id":"V-12","x":731.5,"y":1054.5,"width":28,"height":15},{"id":"V-13","x":759.5,"y":1054.5,"width":28,"height":15},{"id":"V-14","x":787.5,"y":1054.5,"width":28,"height":15},{"id":"V-15","x":815.5,"y":1054.5,"width":28,"height":15},{"id":"V-16","x":858.5,"y":1054.5,"width":28,"height":15},{"id":"V-17","x":886.5,"y":1054.5,"width":28,"height":15},{"id":"V-18","x":914.5,"y":1054.5,"width":28,"height":15},{"id":"V-19","x":942.5,"y":1054.5,"width":28,"height":15},{"id":"V-20","x":970.5,"y":1054.5,"width":28,"height":15},{"id":"V-21","x":1117,"y":1054.5,"width":28,"height":15},{"id":"V-22","x":1145,"y":1054.5,"width":28,"height":15},{"id":"V-23","x":1173,"y":1054.5,"width":28,"height":15},{"id":"V-24","x":1648,"y":1054.5,"width":28,"height":15},{"id":"V-25","x":1676,"y":1054.5,"width":28,"height":15},{"id":"V-26","x":1704,"y":1054.5,"width":28,"height":15},{"id":"V-27","x":1732,"y":1054.5,"width":28,"height":15},{"id":"V-28","x":1774,"y":1054.5,"width":28,"height":15},{"id":"V-29","x":1802,"y":1054.5,"width":28,"height":15},{"id":"V-30","x":1830,"y":1054.5,"width":28,"height":15},{"id":"V-31","x":1858,"y":1054.5,"width":28,"height":15},{"id":"V-32","x":1886,"y":1054.5,"width":28,"height":15},{"id":"V-33","x":1929,"y":1054.5,"width":28,"height":15},{"id":"V-34","x":1957,"y":1054.5,"width":28,"height":15},{"id":"V-35","x":1985,"y":1054.5,"width":28,"height":15},{"id":"V-36","x":2013,"y":1054.5,"width":28,"height":15},{"id":"V-37","x":2041,"y":1054.5,"width":28,"height":15},{"id":"T-20","x":299,"y":1542,"width":28,"height":15},{"id":"T-19","x":327,"y":1542,"width":28,"height":15},{"id":"T-18","x":403.5,"y":1542,"width":28,"height":15},{"id":"T-17","x":431.5,"y":1542,"width":28,"height":15},{"id":"T-16","x":507,"y":1542,"width":28,"height":15},{"id":"T-15","x":535,"y":1542,"width":28,"height":15},{"id":"T-14","x":824,"y":1542,"width":28,"height":15},{"id":"T-13","x":852,"y":1542,"width":28,"height":15},{"id":"T-12","x":934,"y":1542,"width":28,"height":15},{"id":"T-11","x":962,"y":1542,"width":28,"height":15},{"id":"T-10","x":1248,"y":1542,"width":28,"height":15},{"id":"T-09","x":1276,"y":1542,"width":28,"height":15},{"id":"T-08","x":1668,"y":1542,"width":28,"height":15},{"id":"T-07","x":1696,"y":1542,"width":28,"height":15},{"id":"T-06","x":1776,"y":1542,"width":28,"height":15},{"id":"T-05","x":1805,"y":1542,"width":28,"height":15},{"id":"T-04","x":1883,"y":1542,"width":28,"height":15},{"id":"T-03","x":1911,"y":1542,"width":28,"height":15},{"id":"T-02","x":1992.5,"y":1542,"width":28,"height":15},{"id":"T-01","x":2020.5,"y":1542,"width":28,"height":15},{"id":"E-01","x":663,"y":1124,"width":15,"height":28},{"id":"E-02","x":663,"y":1152,"width":15,"height":28},{"id":"E-03","x":663,"y":1180,"width":15,"height":28},{"id":"E-04","x":663,"y":1208,"width":15,"height":28},{"id":"E-05","x":663,"y":1236,"width":15,"height":28},{"id":"E-06","x":663,"y":1264,"width":15,"height":28},{"id":"E-07","x":663,"y":1311,"width":15,"height":28},{"id":"E-08","x":663,"y":1339,"width":15,"height":28},{"id":"E-09","x":663,"y":1367,"width":15,"height":28},{"id":"E-10","x":663,"y":1395,"width":15,"height":28},{"id":"E-11","x":663,"y":1423,"width":15,"height":28},{"id":"E-12","x":663,"y":1451,"width":15,"height":28},{"id":"E-24","x":714.5,"y":1125,"width":15,"height":28},{"id":"E-23","x":714.5,"y":1153,"width":15,"height":28},{"id":"E-22","x":714.5,"y":1181,"width":15,"height":28},{"id":"E-21","x":714.5,"y":1209,"width":15,"height":28},{"id":"E-20","x":714.5,"y":1237,"width":15,"height":28},{"id":"E-19","x":714.5,"y":1265,"width":15,"height":28},{"id":"E-18","x":714.5,"y":1312,"width":15,"height":28},{"id":"E-17","x":714.5,"y":1340,"width":15,"height":28},{"id":"E-16","x":714.5,"y":1368,"width":15,"height":28},{"id":"E-15","x":714.5,"y":1396,"width":15,"height":28},{"id":"E-14","x":714.5,"y":1424,"width":15,"height":28},{"id":"E-13","x":714.5,"y":1452,"width":15,"height":28},{"id":"I-01","x":1089,"y":1123,"width":15,"height":28},{"id":"I-02","x":1089,"y":1151,"width":15,"height":28},{"id":"I-03","x":1089,"y":1179,"width":15,"height":28},{"id":"I-04","x":1089,"y":1207,"width":15,"height":28},{"id":"I-05","x":1089,"y":1235,"width":15,"height":28},{"id":"I-06","x":1089,"y":1263,"width":15,"height":28},{"id":"I-07","x":1089,"y":1311,"width":15,"height":28},{"id":"I-08","x":1089,"y":1339,"width":15,"height":28},{"id":"I-09","x":1089,"y":1367,"width":15,"height":28},{"id":"I-10","x":1089,"y":1395,"width":15,"height":28},{"id":"I-11","x":1089,"y":1423,"width":15,"height":28},{"id":"I-12","x":1089,"y":1451,"width":15,"height":28},{"id":"I-24","x":1137.5,"y":1123,"width":15,"height":28},{"id":"I-23","x":1137.5,"y":1151,"width":15,"height":28},{"id":"I-22","x":1137.5,"y":1179,"width":15,"height":28},{"id":"I-21","x":1137.5,"y":1207,"width":15,"height":28},{"id":"I-20","x":1137.5,"y":1235,"width":15,"height":28},{"id":"I-19","x":1137.5,"y":1263,"width":15,"height":28},{"id":"I-18","x":1137.5,"y":1311,"width":15,"height":28},{"id":"I-17","x":1137.5,"y":1339,"width":15,"height":28},{"id":"I-16","x":1137.5,"y":1367,"width":15,"height":28},{"id":"I-15","x":1137.5,"y":1395,"width":15,"height":28},{"id":"I-14","x":1137.5,"y":1423,"width":15,"height":28},{"id":"I-13","x":1137.5,"y":1451,"width":15,"height":28},{"id":"M-01","x":1512,"y":1124,"width":15,"height":28},{"id":"M-02","x":1512,"y":1152,"width":15,"height":28},{"id":"M-03","x":1512,"y":1180,"width":15,"height":28},{"id":"M-04","x":1512,"y":1208,"width":15,"height":28},{"id":"M-05","x":1512,"y":1236,"width":15,"height":28},{"id":"M-06","x":1512,"y":1264,"width":15,"height":28},{"id":"M-07","x":1512,"y":1312,"width":15,"height":28},{"id":"M-08","x":1512,"y":1340,"width":15,"height":28},{"id":"M-09","x":1512,"y":1368,"width":15,"height":28},{"id":"M-10","x":1512,"y":1396,"width":15,"height":28},{"id":"M-11","x":1512,"y":1424,"width":15,"height":28},{"id":"M-12","x":1512,"y":1452,"width":15,"height":28},{"id":"M-24","x":1561.5,"y":1124,"width":15,"height":28},{"id":"M-23","x":1561.5,"y":1152,"width":15,"height":28},{"id":"M-22","x":1561.5,"y":1180,"width":15,"height":28},{"id":"M-21","x":1561.5,"y":1208,"width":15,"height":28},{"id":"M-20","x":1561.5,"y":1236,"width":15,"height":28},{"id":"M-19","x":1561.5,"y":1264,"width":15,"height":28},{"id":"M-18","x":1561.5,"y":1312,"width":15,"height":28},{"id":"M-17","x":1561.5,"y":1340,"width":15,"height":28},{"id":"M-16","x":1561.5,"y":1368,"width":15,"height":28},{"id":"M-15","x":1561.5,"y":1396,"width":15,"height":28},{"id":"M-14","x":1561.5,"y":1424,"width":15,"height":28},{"id":"M-13","x":1561.5,"y":1452,"width":15,"height":28},{"id":"O-02","x":1724,"y":1129,"width":28,"height":15},{"id":"O-01","x":1752,"y":1129,"width":28,"height":15},{"id":"O-03","x":1724,"y":1153,"width":15,"height":28},{"id":"O-04","x":1724,"y":1181,"width":15,"height":28},{"id":"O-05","x":1724,"y":1209,"width":15,"height":28},{"id":"O-06","x":1724,"y":1237,"width":15,"height":28},{"id":"O-07","x":1724,"y":1265,"width":15,"height":28},{"id":"O-08","x":1724,"y":1312,"width":15,"height":28},{"id":"O-09","x":1724,"y":1340,"width":15,"height":28},{"id":"O-10","x":1724,"y":1368,"width":15,"height":28},{"id":"O-11","x":1724,"y":1396,"width":15,"height":28},{"id":"O-12","x":1724,"y":1424,"width":15,"height":28},{"id":"O-13","x":1724,"y":1460,"width":28,"height":15},{"id":"O-14","x":1752,"y":1460,"width":28,"height":15},{"id":"O-15","x":1765,"y":1424,"width":15,"height":28},{"id":"O-16","x":1765,"y":1396,"width":15,"height":28},{"id":"O-17","x":1765,"y":1368,"width":15,"height":28},{"id":"O-18","x":1765,"y":1340,"width":15,"height":28},{"id":"O-19","x":1765,"y":1312,"width":15,"height":28},{"id":"O-20","x":1765,"y":1265,"width":15,"height":28},{"id":"O-21","x":1765,"y":1237,"width":15,"height":28},{"id":"O-22","x":1765,"y":1209,"width":15,"height":28},{"id":"O-23","x":1765,"y":1181,"width":15,"height":28},{"id":"O-24","x":1765,"y":1153,"width":15,"height":28},{"id":"N-01","x":1619,"y":1181,"width":15,"height":28},{"id":"N-02","x":1619,"y":1209,"width":15,"height":28},{"id":"N-03","x":1619,"y":1237,"width":15,"height":28},{"id":"N-04","x":1619,"y":1265,"width":15,"height":28},{"id":"N-05","x":1619,"y":1314,"width":15,"height":28},{"id":"N-06","x":1619,"y":1342,"width":15,"height":28},{"id":"N-07","x":1619,"y":1370,"width":15,"height":28},{"id":"N-08","x":1619,"y":1398,"width":15,"height":28},{"id":"N-09","x":1619,"y":1426,"width":15,"height":28},{"id":"N-10","x":1619,"y":1460,"width":28,"height":15},{"id":"N-11","x":1647,"y":1460,"width":28,"height":15},{"id":"N-12","x":1660,"y":1426,"width":15,"height":28},{"id":"N-13","x":1660,"y":1398,"width":15,"height":28},{"id":"N-14","x":1660,"y":1370,"width":15,"height":28},{"id":"N-15","x":1660,"y":1342,"width":15,"height":28},{"id":"N-16","x":1660,"y":1314,"width":15,"height":28},{"id":"N-17","x":1660,"y":1265,"width":15,"height":28},{"id":"N-18","x":1660,"y":1237,"width":15,"height":28},{"id":"N-19","x":1660,"y":1209,"width":15,"height":28},{"id":"N-20","x":1660,"y":1181,"width":15,"height":28},{"id":"A-02","x":244,"y":1187,"width":28,"height":15},{"id":"A-01","x":272,"y":1187,"width":28,"height":15},{"id":"A-03","x":244,"y":1220,"width":15,"height":28},{"id":"A-04","x":244,"y":1248,"width":15,"height":28},{"id":"A-05","x":244,"y":1276,"width":15,"height":28},{"id":"A-06","x":244,"y":1335,"width":15,"height":28},{"id":"A-07","x":244,"y":1363,"width":15,"height":28},{"id":"A-08","x":244,"y":1391,"width":15,"height":28},{"id":"A-09","x":244,"y":1426,"width":28,"height":15},{"id":"A-10","x":272,"y":1426,"width":28,"height":15},{"id":"A-11","x":285,"y":1391,"width":15,"height":28},{"id":"A-12","x":285,"y":1363,"width":15,"height":28},{"id":"A-13","x":285,"y":1335,"width":15,"height":28},{"id":"A-14","x":285,"y":1276,"width":15,"height":28},{"id":"A-15","x":285,"y":1248,"width":15,"height":28},{"id":"A-16","x":285,"y":1220,"width":15,"height":28},{"id":"R-02","x":2044,"y":1180,"width":28,"height":15},{"id":"R-01","x":2072,"y":1180,"width":28,"height":15},{"id":"R-03","x":2041,"y":1207,"width":15,"height":28},{"id":"R-04","x":2041,"y":1235,"width":15,"height":28},{"id":"R-05","x":2041,"y":1263,"width":15,"height":28},{"id":"R-06","x":2041,"y":1312,"width":15,"height":28},{"id":"R-07","x":2041,"y":1340,"width":15,"height":28},{"id":"R-08","x":2041,"y":1368,"width":15,"height":28},{"id":"R-09","x":2044,"y":1408,"width":28,"height":15},{"id":"R-10","x":2072,"y":1408,"width":28,"height":15},{"id":"R-11","x":2087,"y":1367,"width":15,"height":28},{"id":"R-12","x":2087,"y":1339,"width":15,"height":28},{"id":"R-13","x":2087,"y":1311,"width":15,"height":28},{"id":"R-14","x":2087,"y":1263,"width":15,"height":28},{"id":"R-15","x":2087,"y":1235,"width":15,"height":28},{"id":"R-16","x":2087,"y":1207,"width":15,"height":28},{"id":"U-01","x":182.5,"y":1447,"width":15,"height":28},{"id":"U-02","x":182.5,"y":1419,"width":15,"height":28},{"id":"U-03","x":182.5,"y":1391,"width":15,"height":28},{"id":"U-04","x":182.5,"y":1342,"width":15,"height":28},{"id":"U-05","x":182.5,"y":1314,"width":15,"height":28},{"id":"U-06","x":182.5,"y":1286,"width":15,"height":28},{"id":"U-07","x":182.5,"y":1258,"width":15,"height":28},{"id":"U-08","x":182.5,"y":1230,"width":15,"height":28},{"id":"U-09","x":182.5,"y":1188,"width":15,"height":28},{"id":"U-10","x":182.5,"y":1160,"width":15,"height":28},{"id":"U-11","x":182.5,"y":1132,"width":15,"height":28},{"id":"S-01","x":2138,"y":1131,"width":15,"height":28},{"id":"S-02","x":2138,"y":1159,"width":15,"height":28},{"id":"S-03","x":2138,"y":1187,"width":15,"height":28},{"id":"S-04","x":2138,"y":1230,"width":15,"height":28},{"id":"S-05","x":2138,"y":1258,"width":15,"height":28},{"id":"S-06","x":2138,"y":1286,"width":15,"height":28},{"id":"S-07","x":2138,"y":1314,"width":15,"height":28},{"id":"S-08","x":2138,"y":1342,"width":15,"height":28},{"id":"S-09","x":2138,"y":1391,"width":15,"height":28},{"id":"S-10","x":2138,"y":1419,"width":15,"height":28},{"id":"S-11","x":2138,"y":1447,"width":15,"height":28}],"blockLabels":[{"id":"label-か","text":"か","x":250,"y":321,"fontSize":27},{"id":"label-1760443366503","text":"お","x":245,"y":428,"fontSize":27},{"id":"label-1760443400202","text":"え","x":251,"y":540,"fontSize":27},{"id":"label-1760443416869","text":"う","x":269,"y":628,"fontSize":27},{"id":"label-1760443431897","text":"い","x":321,"y":729,"fontSize":27},{"id":"label-1760443445743","text":"あ","x":846,"y":819,"fontSize":27},{"id":"label-1760443472621","text":"シ","x":1864,"y":293,"fontSize":27},{"id":"label-1760443493497","text":"サ","x":1867,"y":396,"fontSize":27},{"id":"label-1760443525702","text":"コ","x":1872,"y":522,"fontSize":27},{"id":"label-1760443662229","text":"ケ","x":1872,"y":604,"fontSize":27},{"id":"label-1760443713827","text":"ク","x":1872,"y":707,"fontSize":27},{"id":"label-1760444018131","text":"キ","x":1969,"y":825,"fontSize":27},{"id":"label-1760444038866","text":"U","x":218,"y":1146,"fontSize":27},{"id":"label-1760444053939","text":"A","x":271,"y":1272,"fontSize":27},{"id":"label-1760444075886","text":"B","x":375,"y":1181,"fontSize":27},{"id":"label-1760444098933","text":"C","x":481,"y":1182,"fontSize":27},{"id":"label-1760444115328","text":"D","x":590,"y":1183,"fontSize":27},{"id":"label-1760444132038","text":"E","x":695,"y":1186,"fontSize":27},{"id":"label-1760444149699","text":"F","x":801,"y":1185,"fontSize":27},{"id":"label-1760444167999","text":"G","x":906,"y":1183,"fontSize":27},{"id":"label-1760444184547","text":"H","x":1011,"y":1183,"fontSize":27},{"id":"label-1760444201131","text":"I","x":1119,"y":1181,"fontSize":27},{"id":"label-1760444219896","text":"J","x":1223,"y":1180,"fontSize":27},{"id":"label-1760444246797","text":"K","x":1331,"y":1177,"fontSize":27},{"id":"label-1760444264898","text":"L","x":1437,"y":1176,"fontSize":27},{"id":"label-1760444278143","text":"M","x":1543,"y":1178,"fontSize":27},{"id":"label-1760444294601","text":"N","x":1646,"y":1246,"fontSize":27},{"id":"label-1760444310732","text":"O","x":1753,"y":1184,"fontSize":27},{"id":"label-1760444330017","text":"P","x":1859,"y":1184,"fontSize":27},{"id":"label-1760444348290","text":"Q","x":1966,"y":1181,"fontSize":27},{"id":"label-1760444363963","text":"R","x":2071,"y":1257,"fontSize":27},{"id":"label-1760444381761","text":"S","x":2168,"y":1159,"fontSize":27},{"id":"label-1760444407736","text":"T","x":306,"y":1524,"fontSize":27},{"id":"label-1760444429698","text":"V","x":287,"y":1093,"fontSize":27},{"id":"label-1760444442756","text":"V","x":2041,"y":1093,"fontSize":27},{"id":"label-1790351443545","text":"T","x":1804,"y":1529,"fontSize":27}]};
+
+// [name, phonetic, area, number, x url] from the M3 web catalog
+const CIRCLES=
+[];
+
+const BASE=[
+];
+
+const HALLS={
+ H1:{name:'第一展示場',floor:'2F',vb:[140,1005,2066,602]},
+ // 1F's view also shows the waiting area outside the west wall; frame = the hall itself
+ H2F1:{name:'第二展示場',floor:'1F',vb:[-130,234,1259,635],frame:[55,234,1074,635]},
+ H2F2:{name:'第二展示場',floor:'2F',vb:[1176,229,1107,632]},
+};
+const HALL_ORDER=['H1','H2F1','H2F2'];
+const hallOf=b=>'あいうえおか'.includes(b)?'H2F1':'キクケコサシ'.includes(b)?'H2F2':'H1';
+// 第一展示場は入口と出口が別。開場直後は南側（T列の08と09の間）の入口からのみ入場でき、
+// 午後になると北側の入口も使える。第一展示場から出るのは北側の出口だけ。
+const PORTALS={
+ e1s:{hall:'H1',x:1551,y:1588,label:'入口（南）',in:1},
+ e1n:{hall:'H1',x:1589,y:1030,label:'入口（午後〜）',in:1,pm:1},
+ x1:{hall:'H1',x:1389,y:1030,label:'出口',out:1},
+ // 第二展示場1Fも入口と出口が別（出口は入口のすぐ北側）。
+ // 開場直後は西側の待機列から南西の入口（e2w）へ入る。東側の入口（e2）は午後から。
+ e2:{hall:'H2F1',x:1100,y:437,label:'入口（午後〜）',in:1,pm:1,lab:'l'},
+ e2w:{hall:'H2F1',x:276,y:850,label:'入口（開場直後）',in:1,am:1,labY:-16},
+ x2:{hall:'H2F1',x:1105,y:358,label:'出口',out:1},
+ s1:{hall:'H2F1',x:1062,y:568,label:'エスカレーター',in:1,out:1,lab:'l'},
+ s2:{hall:'H2F2',x:2168,y:440,label:'エスカレーター',in:1,out:1,lab:'l'},
+};
+// waiting line before opening (outside the west wall of 第二展示場1F)
+const QUEUE={hall:'H2F1',x:-110,y:250,w:150,h:590};
+// one-way links between portals; no cost = walking inside the hall; 'am' / 'pm' = only at that time.
+// building-to-building walks weigh much more than walking an aisle
+const LINKS=[['x1','e2',2500,'pm'],['x1','e2w',2900,'am'],['x2','e1s',2800],['x2','e1n',2500,'pm'],['s1','s2',300],['s2','s1',300],
+  ['e2','s1'],['s1','x2'],['e2','x2'],['e2w','s1'],['e2w','x2']];
+const usable=k=>!(PORTALS[k].pm&&st.time!=='pm')&&!(PORTALS[k].am&&st.time==='pm');
+// start button 「第二 1F入口」 means whichever 1F entrance is open at that time
+const startKey=()=>st.start==='e2'?(st.time==='pm'?'e2':'e2w'):(usable(st.start)?st.start:'e1s');
+const SP=()=>PORTALS[startKey()];
+const UNIT_M=0.064; // ~1.8 m per space number
+
+const deskMap={}; DATA.desks.forEach(d=>deskMap[d.id]=d);
+function place(s){
+  const d=deskMap[s.area+'-'+s.num.slice(0,2)]; if(!d) return null;
+  return Object.assign(s,{hall:hallOf(s.area),x:d.x+d.width/2,y:d.y+d.height/2,desk:d});
+}
+let STOPS=[];
+function rebuildStops(){
+  STOPS=[...BASE,...st.custom].filter(s=>!st.removed[s.id]).map(place).filter(Boolean);
+}
+
+/* directed portal graph (Floyd–Warshall), rebuilt when the time of day changes */
+const man=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+const PK=Object.keys(PORTALS);
+const D={},NX={};
+function computeD(){
+  PK.forEach(a=>{D[a]={};NX[a]={};PK.forEach(b=>{D[a][b]=a===b?0:Infinity;NX[a][b]=b})});
+  LINKS.forEach(([a,b,c,when])=>{if(when&&when!==st.time)return; D[a][b]=c??man(PORTALS[a],PORTALS[b])});
+  PK.forEach(k=>PK.forEach(i=>PK.forEach(j=>{if(D[i][k]+D[k][j]<D[i][j]){D[i][j]=D[i][k]+D[k][j];NX[i][j]=NX[i][k]}})));
+}
+function best(p,q){ // leave p's hall through an exit, enter q's hall through an entrance
+  let r={c:Infinity};
+  PK.filter(a=>PORTALS[a].hall===p.hall&&PORTALS[a].out&&usable(a)).forEach(a=>PK.filter(b=>PORTALS[b].hall===q.hall&&PORTALS[b].in&&usable(b)).forEach(b=>{
+    const c=man(p,PORTALS[a])+D[a][b]+man(PORTALS[b],q); if(c<r.c) r={c,a,b};
+  }));
+  return r;
+}
+const dist=(p,q)=>p.hall===q.hall?man(p,q):best(p,q).c;
+function legs(p,q){ // [{hall,pts}]
+  if(p.hall===q.hall) return [{hall:p.hall,pts:[p,q]}];
+  const {a,b}=best(p,q); const out=[{hall:p.hall,pts:[p,PORTALS[a]]}];
+  let u=a; while(u!==b){const v=NX[u][b]; if(PORTALS[u].hall===PORTALS[v].hall) out.push({hall:PORTALS[u].hall,pts:[PORTALS[u],PORTALS[v]]}); u=v;}
+  out.push({hall:q.hall,pts:[PORTALS[b],q]}); return out;
+}
+
+/* open-path TSP: nearest neighbour then 2-opt, start fixed */
+function orderFrom(start,items){
+  const rest=items.slice(), path=[start];
+  while(rest.length){const cur=path[path.length-1]; let bi=0; rest.forEach((s,i)=>{if(dist(cur,s)<dist(cur,rest[bi]))bi=i}); path.push(rest.splice(bi,1)[0]);}
+  let improved=true;
+  while(improved){improved=false;
+    for(let i=1;i<path.length-1;i++)for(let k=i+1;k<path.length;k++){
+      const before=dist(path[i-1],path[i])+(k+1<path.length?dist(path[k],path[k+1]):0);
+      const after=dist(path[i-1],path[k])+(k+1<path.length?dist(path[i],path[k+1]):0);
+      if(after<before-0.01){path.splice(i,k-i+1,...path.slice(i,k+1).reverse());improved=true}
+    }}
+  return path.slice(1);
+}
+
+/* state */
+const KEY='m3-2027s-route-blank';
+const DEFAULTS=()=>({order:[],split:true,pin:true,topFirst:true,topN:5,done:{},passed:{},start:'e1s',time:'am',mode:'short',hall:'H1',zoom:{},custom:[],removed:{}});
+const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
+// Read and sanity-check the saved state; anything malformed falls back to defaults
+function load(){
+  let s=null;
+  try{s=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  return sanitize(s);
+}
+// also used for data received from another device, so treat every field as untrusted
+function sanitize(s){
+  const st=DEFAULTS();
+  if(!isObj(s)) return st;
+  if(Array.isArray(s.order)) st.order=s.order.filter(x=>typeof x==='string').slice(0,500);
+  ['done','removed','zoom','passed'].forEach(k=>{if(isObj(s[k])) st[k]=Object.fromEntries(Object.entries(s[k]).filter(([,v])=>typeof v==='number'||typeof v==='boolean'))});
+  if(Array.isArray(s.custom)) st.custom=s.custom.filter(c=>isObj(c)&&typeof c.id==='string'&&typeof c.area==='string'&&typeof c.num==='string').slice(0,300).map(c=>({id:c.id,area:c.area,num:c.num,name:String(c.name||c.id).slice(0,80),circle:String(c.circle||c.name||'').slice(0,80),tw:Array.isArray(c.tw)?c.tw.filter(u=>typeof u==='string'&&/^https:\/\//.test(u)).slice(0,3):[],custom:true}));
+  if(s.start in PORTALS&&PORTALS[s.start].in) st.start=s.start;
+  if(s.time==='pm') st.time='pm';
+  if(['strict','flex','short'].includes(s.mode)) st.mode=s.mode;
+  if(typeof s.split==='boolean') st.split=s.split;
+  if(typeof s.pin==='boolean') st.pin=s.pin;
+  if(typeof s.topFirst==='boolean') st.topFirst=s.topFirst;
+  if(Number.isInteger(s.topN)&&s.topN>=1&&s.topN<=50) st.topN=s.topN;
+  if(s.hall in HALLS) st.hall=s.hall;
+  // earlier version stored 3 priority tiers; turn them into a ranking once
+  if(!st.order.length&&isObj(s.prio)) st.order=[...BASE,...st.custom].map((b,i)=>[b.id,(s.prio[b.id]||2)*100+i]).sort((a,b)=>a[1]-b[1]).map(a=>a[0]);
+  return st;
+}
+let st=load();
+let syncing=false; // true while adopting another tab's data, so we don't write it straight back
+const save=()=>{if(syncing)return; try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+// another tab of this page saved newer data: adopt it instead of overwriting it later
+addEventListener('storage',e=>{if(e.key!==KEY)return; syncing=true; try{st=load();refresh();showHall(st.hall);applyPin()}finally{syncing=false}});
+
+/* ranking */
+function syncOrder(){
+  const ids=new Set(STOPS.map(s=>s.id));
+  st.order=st.order.filter(id=>ids.has(id));
+  STOPS.forEach(s=>{if(!st.order.includes(s.id))st.order.push(s.id)});
+}
+// フロアごと: 第一展示場 / 第二展示場1F / 第二展示場2F are ranked and visited as separate blocks
+const byId=id=>STOPS.find(s=>s.id===id);
+const groupIds=s=>st.split?st.order.filter(id=>byId(id).hall===s.hall):st.order;
+const rankOf=s=>groupIds(s).indexOf(s.id);
+function tier(s){const n=groupIds(s).length,r=rankOf(s); return r<Math.ceil(n/3)?1:r<Math.ceil(n*2/3)?2:3}
+const PCOL={1:'var(--p1)',2:'var(--p2)',3:'var(--p3)'};
+const SLACK=2; // 近くを寄り道: a booth may slip at most this many places behind its rank
+
+let route=[];
+function plan(cur,list,anchor=true){ // list is in ranking order
+  if(st.mode==='short'){
+    // 最短距離 starts at the best-ranked booth, then takes the shortest path from there
+    const head=anchor&&list.length?[list[0]]:[];
+    if(head.length){cur=list[0]; list=list.slice(1)}
+    if(!st.topFirst) return head.concat(list.length?orderFrom(cur,list):[]);
+    // 後回し: shortest path over the top-ranked booths first, then over the rest
+    const hi=list.filter(s=>rankOf(s)<st.topN), lo=list.filter(s=>rankOf(s)>=st.topN);
+    const a=hi.length?orderFrom(cur,hi):[];
+    return head.concat(a,lo.length?orderFrom(a.length?a[a.length-1]:cur,lo):[]);
+  }
+  if(st.mode==='strict') return list.slice();
+  const out=[], rest=list.map((s,r)=>({s,r}));
+  for(let t=0;rest.length;t++){
+    let pick=rest.find(o=>o.r+SLACK<=t);
+    if(!pick) rest.filter(o=>o.r<=t+SLACK).forEach(o=>{if(!pick||dist(cur,o.s)<dist(cur,pick.s))pick=o});
+    rest.splice(rest.indexOf(pick),1); out.push(pick.s); cur=pick.s;
+  }
+  return out;
+}
+let floorOrder=HALL_ORDER.slice(), passedFrom=0;
+const pathLen=(start,o)=>o.reduce((a,s,i)=>a+dist(i?o[i-1]:start,s),0);
+function compute(){
+  const byRank=(a,b)=>st.order.indexOf(a.id)-st.order.indexOf(b.id);
+  const todo=STOPS.filter(s=>!st.done[s.id]&&!st.passed[s.id]).sort(byRank);
+  // パス: passed booths wait at the end of the route, in the order they were passed
+  const passed=STOPS.filter(s=>!st.done[s.id]&&st.passed[s.id]).sort((a,b)=>st.passed[a.id]-st.passed[b.id]);
+  const start=SP();
+  if(!st.split){route=plan(start,todo); floorOrder=HALL_ORDER.slice()}
+  else{
+    // フロアごと: finish one floor before moving on. The starting floor goes first; the other two go in
+    // whichever order walks less (e.g. start at 第一 → 第二1F → 第二2F, so you never double back).
+    const rest=HALL_ORDER.filter(h=>h!==start.hall);
+    let best=null;
+    [[start.hall,...rest],[start.hall,...rest.slice().reverse()]].forEach(order=>{
+      let cur=start; const out=[];
+      order.forEach(h=>{const g=todo.filter(s=>s.hall===h); if(!g.length)return; const o=plan(cur,g); out.push(...o); cur=o[o.length-1]});
+      const len=pathLen(start,out); if(!best||len<best.len) best={order,out,len};
+    });
+    route=best.out; floorOrder=best.order;
+  }
+  passedFrom=route.length; route=route.concat(passed);
+}
+
+/* map */
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a={},txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e};
+const svgs={};
+function buildMaps(){
+  HALL_ORDER.forEach(h=>{
+    const [x,y,w,hh]=HALLS[h].vb, [fx,fy,fw,fh]=HALLS[h].frame||HALLS[h].vb;
+    const s=el('svg',{viewBox:`${x} ${y} ${w} ${hh}`,role:'img','aria-label':HALLS[h].name+' '+HALLS[h].floor});
+    s.appendChild(el('rect',{class:'m-frame',x:fx+6,y:fy+6,width:fw-12,height:fh-12,rx:6}));
+    if(QUEUE.hall===h){ // 待機列: shown before opening only (opacity follows the time of day)
+      const q=el('g',{'data-am':1});
+      q.appendChild(el('rect',{class:'m-queue',x:QUEUE.x,y:QUEUE.y,width:QUEUE.w,height:QUEUE.h,rx:8}));
+      q.appendChild(el('text',{class:'m-qt',x:QUEUE.x+QUEUE.w/2,y:QUEUE.y+QUEUE.h/2,'text-anchor':'middle','dominant-baseline':'middle',transform:`rotate(-90 ${QUEUE.x+QUEUE.w/2} ${QUEUE.y+QUEUE.h/2})`},'待機列（開場前）'));
+      q.appendChild(el('path',{class:'m-qpath',d:`M ${QUEUE.x+QUEUE.w/2} ${QUEUE.y+QUEUE.h} L ${QUEUE.x+QUEUE.w/2} 850 L ${PORTALS.e2w.x-14} 850`}));
+      s.appendChild(q);
+    }
+    const g=el('g');
+    DATA.desks.forEach(d=>{const b=d.id.split('-')[0]; if(hallOf(b)!==h)return;
+      g.appendChild(el('rect',{class:'m-desk',x:d.x,y:d.y,width:d.width,height:d.height}));
+      g.appendChild(el('text',{class:'m-dn',x:d.x+d.width/2,y:d.y+d.height/2+3,'text-anchor':'middle'},String(+d.id.split('-')[1])));
+    });
+    s.appendChild(g);
+    DATA.blockLabels.forEach(l=>{if(hallOf(l.text)!==h)return; s.appendChild(el('text',{class:'m-bl',x:l.x,y:l.y,'text-anchor':'middle','dominant-baseline':'middle'},l.text))});
+    Object.values(PORTALS).forEach(p=>{if(p.hall!==h)return;
+      const g=el('g',p.pm?{'data-pm':1}:p.am?{'data-am':1}:{});
+      g.appendChild(el('rect',{class:'m-portal'+(p.out&&!p.in?' m-exit':''),x:p.x-9,y:p.y-9,width:18,height:18,rx:4}));
+      const left=p.lab==='l'||(p.out&&!p.in);
+      g.appendChild(el('text',{class:'m-pt'+(p.out&&!p.in?' m-exit':''),x:p.x+(left?-14:14),y:p.y+(p.labY??(p.y>1500?-14:28)),'text-anchor':left?'end':'start'},p.label));
+      s.appendChild(g);
+    });
+    s.appendChild(el('g',{class:'layer'}));
+    svgs[h]=s;
+  });
+}
+function drawRoute(){
+  HALL_ORDER.forEach(h=>{const L=svgs[h].querySelector('.layer'); L.replaceChildren();});
+  // start marker
+  HALL_ORDER.forEach(h=>{svgs[h].querySelectorAll('[data-pm]').forEach(e=>e.style.opacity=st.time==='pm'?1:.3);
+    svgs[h].querySelectorAll('[data-am]').forEach(e=>e.style.opacity=st.time==='pm'?.3:1)});
+  const sp=SP(); const SL=svgs[sp.hall].querySelector('.layer');
+  SL.appendChild(el('circle',{class:'m-start',cx:sp.x,cy:sp.y,r:13}));
+  SL.appendChild(el('text',{class:'m-tn',x:sp.x,y:sp.y+5,'text-anchor':'middle'},'S'));
+  // lines
+  let prev=sp;
+  route.forEach(s=>{legs(prev,s).forEach(l=>{const L=svgs[l.hall].querySelector('.layer');
+    L.appendChild(el('path',{class:'m-route',d:'M'+l.pts.map(p=>p.x+' '+p.y).join(' L ')}))}); prev=s;});
+  // markers: booths sharing a desk or sitting next to each other would cover one another, so the
+  // earliest stop keeps the full-size number on the desk and later ones shrink to a free spot beside it
+  STOPS.forEach(s=>{const d=s.desk; svgs[s.hall].querySelector('.layer').appendChild(el('rect',{class:'m-hl',x:d.x-2,y:d.y-2,width:d.width+4,height:d.height+4,rx:3,style:`stroke:${st.done[s.id]?'var(--ok)':PCOL[tier(s)]}`}))});
+  const placed={}, ops=[], R=15, r=10;
+  const free=(h,x,y,rad)=>(placed[h]||[]).every(p=>Math.hypot(p.x-x,p.y-y)>=p.r+rad+1);
+  const ordered=[...route,...STOPS.filter(s=>st.done[s.id])];
+  ordered.forEach(s=>{
+    const i=route.indexOf(s), done=!!st.done[s.id], fill=done?'var(--ok)':i>=passedFrom?'var(--p3)':PCOL[tier(s)];
+    let pos={x:s.x,y:s.y,rad:R,small:false};
+    if(done||!free(s.hall,s.x,s.y,R)){
+      pos={x:s.x,y:s.y,rad:r,small:true};
+      for(const [dx,dy] of [[24,0],[-24,0],[0,-24],[0,24],[20,-20],[-20,-20],[20,20],[-20,20],[44,0],[-44,0]]){
+        if(free(s.hall,s.x+dx,s.y+dy,r)){pos={x:s.x+dx,y:s.y+dy,rad:r,small:true};break}
+      }
+    }
+    (placed[s.hall]=placed[s.hall]||[]).push({x:pos.x,y:pos.y,r:pos.rad});
+    ops.push({s,i,done,fill,pos});
+  });
+  // draw later stops first so the earlier (more important) numbers end up on top
+  ops.slice().reverse().forEach(({s,i,done,fill,pos})=>{
+    const L=svgs[s.hall].querySelector('.layer');
+    const g=el('g',{style:'cursor:pointer'}); g.addEventListener('click',()=>focusStop(s));
+    if(pos.small&&(pos.x!==s.x||pos.y!==s.y)) g.appendChild(el('line',{class:'m-lead',x1:s.x,y1:s.y,x2:pos.x,y2:pos.y}));
+    g.appendChild(el('circle',{class:'m-tgt',cx:pos.x,cy:pos.y,r:pos.rad,style:`fill:${fill}`}));
+    g.appendChild(el('text',{class:pos.small?'m-tn m-tn-s':'m-tn',x:pos.x,y:pos.y+(pos.small?4:5),'text-anchor':'middle'},done?'✓':String(i+1)));
+    g.appendChild(el('title',{},`${s.name} ${s.area}-${s.num}（優先${rankOf(s)+1}位）`));
+    L.appendChild(g);
+  });
+  // 次はここ: a pulsing ring and a callout on the next booth to visit
+  const nx=route[0];
+  if(nx){
+    const booth=nx.area+'-'+nx.num, L=svgs[nx.hall].querySelector('.layer'), w=nx.name.length*16+booth.length*11+84;
+    const g=el('g',{class:'m-next',style:'pointer-events:none'});
+    g.appendChild(el('circle',{class:'m-pulse',cx:nx.x,cy:nx.y,r:22}));
+    const bx=nx.x-w/2, by=nx.y-62;
+    g.appendChild(el('rect',{class:'m-call',x:bx,y:by,width:w,height:30,rx:8}));
+    g.appendChild(el('path',{class:'m-call',d:`M ${nx.x-7} ${by+29} L ${nx.x} ${by+38} L ${nx.x+7} ${by+29} Z`}));
+    g.appendChild(el('text',{class:'m-callt',x:nx.x,y:by+20,'text-anchor':'middle'},'次 ▸ '+nx.name+'（'+booth+'）'));
+    L.appendChild(g);
+  }
+}
+
+const scroller=document.getElementById('mapscroll');
+function zoomOf(h){return st.zoom[h]||(h==='H1'?2.2:1.4)}
+function applyZoom(keepCenter=true){
+  const s=svgs[st.hall]; const W=scroller.clientWidth;
+  const cx=(scroller.scrollLeft+scroller.clientWidth/2)/(s.clientWidth||1), cy=(scroller.scrollTop+scroller.clientHeight/2)/(s.clientHeight||1);
+  const w=W*zoomOf(st.hall); s.style.width=w+'px'; s.style.height=(w*HALLS[st.hall].vb[3]/HALLS[st.hall].vb[2])+'px';
+  if(keepCenter){scroller.scrollLeft=cx*s.clientWidth-scroller.clientWidth/2; scroller.scrollTop=cy*s.clientHeight-scroller.clientHeight/2;}
+}
+function showHall(h,centerOn){
+  st.hall=h; save();
+  scroller.replaceChildren(svgs[h]); applyZoom(false);
+  const target=centerOn||route.find(s=>s.hall===h)||STOPS.find(s=>s.hall===h);
+  if(target) centerAt(target);
+  renderTabs();
+}
+function centerAt(p){
+  const s=svgs[st.hall],[x,y,w,h]=HALLS[st.hall].vb;
+  scroller.scrollLeft=(p.x-x)/w*s.clientWidth-scroller.clientWidth/2;
+  scroller.scrollTop=(p.y-y)/h*s.clientHeight-scroller.clientHeight/2;
+}
+function focusStop(s){
+  if((st.zoom[s.hall]||0)<2.6) st.zoom[s.hall]=Math.max(zoomOf(s.hall),2.6);
+  showHall(s.hall,s);
+  if(!st.pin) scroller.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+const pinBtn=document.getElementById('pin');
+function applyPin(){
+  document.getElementById('mapdock').classList.toggle('pinned',st.pin);
+  pinBtn.setAttribute('aria-pressed',st.pin);
+  pinBtn.title=st.pin?'地図の固定を解除':'地図を固定'; pinBtn.setAttribute('aria-label',pinBtn.title);
+  applyZoom();
+}
+pinBtn.onclick=()=>{st.pin=!st.pin;save();applyPin()};
+document.getElementById('zin').onclick=()=>{st.zoom[st.hall]=Math.min(zoomOf(st.hall)*1.35,7);applyZoom();save()};
+document.getElementById('zout').onclick=()=>{st.zoom[st.hall]=Math.max(zoomOf(st.hall)/1.35,1);applyZoom();save()};
+
+function renderTabs(){
+  const t=document.getElementById('tabs'); t.replaceChildren();
+  HALL_ORDER.forEach(h=>{
+    const n=STOPS.filter(s=>s.hall===h&&!st.done[s.id]).length, all=STOPS.filter(s=>s.hall===h).length;
+    const b=document.createElement('button'); b.className='tab'; b.setAttribute('role','tab'); b.id='tab-'+h;
+    b.setAttribute('aria-selected',st.hall===h);
+    b.innerHTML=`<b>${HALLS[h].name}</b><span>${HALLS[h].floor}</span><span class="n">残り ${n}/${all}</span>`;
+    b.onclick=()=>showHall(h); t.appendChild(b);
+  });
+}
+function segs(){
+  if(st.start==='e1n'&&st.time!=='pm') st.start='e1s';
+  const topRow=document.getElementById('topRow'), tf=document.getElementById('topFirst');
+  topRow.hidden=st.mode!=='short'; topRow.classList.toggle('off',!st.topFirst);
+  tf.checked=st.topFirst; document.getElementById('topN').textContent=st.topN;
+  document.getElementById('topMinus').disabled=!st.topFirst||st.topN<=1;
+  document.getElementById('topPlus').disabled=!st.topFirst||st.topN>=50;
+  tf.onchange=()=>{st.topFirst=tf.checked;save();refresh()};
+  document.getElementById('topMinus').onclick=()=>{st.topN=Math.max(1,st.topN-1);save();refresh()};
+  document.getElementById('topPlus').onclick=()=>{st.topN=Math.min(50,st.topN+1);save();refresh()};
+  document.getElementById('modeDesc').textContent=st.mode==='short'?(st.topFirst?`1位から回り始め、上位${st.topN}位までを先に最短で`:'1位から回り始め、あとは最短で')
+    :st.mode==='flex'?'上位3件の中から近い順に（2つより後ろには下がりません）':'優先順位の通りに回ります';
+  const lab=(id,v)=>document.querySelector(`#${id} [data-v="${v}"]`).textContent;
+  const more=document.getElementById('more');
+  document.getElementById('moreSum').innerHTML=`<svg class="ms-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.4-6-10a6 6 0 0 1 12 0c0 4.6-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>`
+    +`<span class="ms-item"><span class="ms-k">スタート</span><span class="ms-v">${lab('startSeg',st.start)}</span></span>`
+    +`<span class="ms-item"><span class="ms-k">時間帯</span><span class="ms-v">${lab('timeSeg',st.time)}</span></span>`
+    +`<span class="ms-cta">${more.open?'閉じる':'変更'}</span>`;
+  more.ontoggle=()=>{const c=more.querySelector('.ms-cta'); if(c) c.textContent=more.open?'閉じる':'変更'};
+  [['startSeg','start'],['modeSeg','mode'],['timeSeg','time']].forEach(([id,k])=>{
+    document.querySelectorAll('#'+id+' button').forEach(b=>{b.setAttribute('aria-pressed',st[k]===b.dataset.v);
+      b.disabled=k==='start'&&b.dataset.v==='e1n'&&st.time!=='pm';
+      b.onclick=()=>{st[k]=b.dataset.v;save();refresh()}});
+  });
+}
+const hallName=h=>HALLS[h].name+' '+HALLS[h].floor;
+function stopItem(s,i){
+  const li=document.createElement('li'); li.className='stop'+(st.done[s.id]?' done':'');
+  li.style.setProperty('--pc',PCOL[tier(s)]);
+  const tw=s.tw.map((u,k)=>`<a href="${esc(u)}" target="_blank" rel="noopener">${s.custom?'X':'告知ツイート'}${s.tw.length>1?k+1:''}</a>`).join('');
+  li.innerHTML=`<div class="num">${st.done[s.id]?'✓':i+1}</div>
+  <div class="body">
+    <div class="top"><span class="name" tabindex="0" role="button">${esc(s.name)}</span><span class="booth">${esc(s.area+'-'+s.num)}</span></div>
+    <div class="meta"><span>${hallName(s.hall)}</span><span>サークル「${esc(s.circle)}」</span>${tw}</div>
+    <div class="ctl"><span class="badge">優先 ${rankOf(s)+1}位</span>
+    <label class="chk"><input type="checkbox" id="done-${esc(s.id)}" ${st.done[s.id]?'checked':''}>訪問済み</label>
+    ${st.done[s.id]?'':`<button class="passbtn" aria-pressed="${!!st.passed[s.id]}">${st.passed[s.id]?'パスを取り消す':'パス'}</button>`}</div>
+  </div>`;
+  if(st.passed[s.id]&&!st.done[s.id]) li.classList.add('passed');
+  const nm=li.querySelector('.name'); nm.onclick=()=>focusStop(s); nm.onkeydown=e=>{if(e.key==='Enter')focusStop(s)};
+  li.querySelector('input').onchange=e=>{
+    if(e.target.checked){st.done[s.id]=1; delete st.passed[s.id]} else delete st.done[s.id];
+    save(); refresh(); if(e.target.checked) showNext('訪問済みにしました');
+  };
+  const pb=li.querySelector('.passbtn');
+  if(pb) pb.onclick=()=>{
+    const was=!!st.passed[s.id];
+    if(was) delete st.passed[s.id]; else st.passed[s.id]=Date.now();
+    save(); refresh(); if(!was) showNext(`${s.name} をパスしました（リストの最後に回しました）`); else toast(`${s.name} のパスを取り消しました`);
+  };
+  return li;
+}
+// after 訪問済み / パス: bring the next booth into view on the map and say where it is
+function showNext(prefix){
+  const nx=route[0];
+  if(!nx){toast(prefix+'。すべて回り終わりました！');return}
+  focusStop(nx);
+  toast(`${prefix}。次は ${nx.name}（${nx.area}-${nx.num}・${hallName(nx.hall)}）`);
+}
+function renderList(){
+  const ol=document.getElementById('route'); ol.replaceChildren();
+  let prev=SP(), total=0, moves=0;
+  route.forEach((s,i)=>{
+    total+=dist(prev,s);
+    if(i===passedFrom){const m=document.createElement('li'); m.className='move passsep'; m.textContent='↓ パスしたブース（あとで回る）'; ol.appendChild(m)}
+    if(prev.hall!==s.hall){moves++; const m=document.createElement('li'); m.className='move';
+      m.textContent=`↓ ${hallName(s.hall)}へ移動`+(HALLS[prev.hall].name!==HALLS[s.hall].name?'（建物を移動）':'（エスカレーター）'); ol.appendChild(m);}
+    ol.appendChild(stopItem(s,i)); prev=s;
+  });
+  if(!route.length){const li=document.createElement('li');li.className='note';li.textContent=STOPS.length?'すべて訪問済みです。':'まだブースがありません。下の「ブースを追加」から回りたいブースを追加してください。';ol.appendChild(li)}
+  const done=STOPS.filter(s=>st.done[s.id]); const dl=document.getElementById('done'); dl.replaceChildren();
+  done.forEach(s=>dl.appendChild(stopItem(s,0)));
+  document.getElementById('doneSec').hidden=!done.length;
+  const walk=Math.round(total*UNIT_M/10)*10;
+  document.getElementById('summary').innerHTML=`<span>残り <b>${route.length}</b> か所</span><span>会場の移動 <b>${moves}</b> 回</span><span>歩行距離の目安 <b>約${walk}</b> m</span>`;
+}
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const boothId=(a,n)=>'c:'+a+'-'+n;
+const inList=(a,n)=>STOPS.some(s=>s.area===a&&s.num===n);
+function removeStop(s){
+  if(s.custom) st.custom=st.custom.filter(c=>c.id!==s.id); else st.removed[s.id]=1;
+  st.order=st.order.filter(id=>id!==s.id); delete st.done[s.id]; delete st.passed[s.id]; save(); refresh();
+}
+function addCircle(c){
+  const [name,,area,num,tw]=c;
+  const base=BASE.find(b=>b.area===area&&b.num===num);
+  if(base){delete st.removed[base.id]}
+  else st.custom.push({id:boothId(area,num),name,circle:name,area,num,tw:tw?[tw]:[],custom:true});
+  save(); refresh(); search();
+}
+const norm=t=>String(t).toLowerCase().replace(/[\s　]/g,'').replace(/[ぁ-ゖ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60)).replace(/[－—–ー‐]/g,'-');
+function search(){
+  const q=norm(document.getElementById('q').value), ol=document.getElementById('results'); ol.replaceChildren();
+  if(!q) return;
+  const mb=parseBooth(document.getElementById('q').value);
+  if(mb){const li=document.createElement('li'); li.className='res';
+    if(inList(mb.area,mb.num)) li.innerHTML=`<div class="rn"><b>${esc(mb.area+'-'+mb.num)}</b><span>すでにリストにあります</span></div>`;
+    else{li.innerHTML=`<div class="rn" style="flex:1"><b>${esc(mb.area+'-'+mb.num)} ・ ${hallName(hallOf(mb.area))}</b><input id="mname" placeholder="名前（任意）" aria-label="名前" style="margin-top:4px;padding:6px 8px"></div><button class="btn">追加</button>`;
+      li.querySelector('button').onclick=()=>{const n=li.querySelector('input').value.trim()||mb.area+'-'+mb.num; addCircle([n,'',mb.area,mb.num,''])};}
+    ol.appendChild(li);}
+  const hits=CIRCLES.filter(c=>{const [n,p,a,num,tw]=c;
+    return norm(n).includes(q)||norm(p).includes(q)||norm(a+'-'+num).startsWith(q)||(q.length>2&&norm(tw).includes(q.replace(/^@/,'')));
+  }).slice(0,20);
+  if(!hits.length){if(mb)return; const li=document.createElement('li');li.className='note';li.textContent=CIRCLES.length?'見つかりませんでした。サークル名かブース番号（例: コ-21b）で探してください。':'ブース番号（例: コ-21b、T-15ab）を入力すると追加できます。';ol.appendChild(li);return}
+  hits.forEach(c=>{const [n,,a,num,tw]=c; const li=document.createElement('li'); li.className='res'; const has=inList(a,num);
+    const onMap=!!deskMap[a+'-'+num.slice(0,2)]; // 藍 = catalog-only participation, no space at the venue
+    li.innerHTML=`<div class="rn"><b>${esc(n)}</b><span>${esc(a+'-'+num)} ・ ${onMap?hallName(hallOf(a)):a==='藍'?'カタログ参加（会場にスペースはありません）':'会場マップに場所がありません'}${tw?' ・ '+esc(tw.replace(/^https?:\/\/(x|twitter)\.com\//,'@').replace(/\/$/,'')):''}</span></div><button class="btn" ${has||!onMap?'disabled':''}>${has?'追加済み':onMap?'追加':'追加できません'}</button>`;
+    li.querySelector('button').onclick=()=>addCircle(c); ol.appendChild(li);});
+}
+// "コ-21b" / "t15ab" / "Ｅ－１９ａ" / "ク-10x" → {area,num} when that desk exists on the map
+// (most desks split into a/b; ク-03〜36 and ケ-03〜07 split into three: x/y/z)
+function parseBooth(raw){
+  const t=raw.normalize('NFKC').trim(); // full-width letters/digits and half-width kana → standard forms
+  const m=t.match(/^(\S)\s*[-－ー−]?\s*(\d{1,2})\s*(ab|a|b|x|y|z)?$/i); if(!m) return null;
+  const area=/[a-z]/i.test(m[1])?m[1].toUpperCase():m[1], n=m[2].padStart(2,'0');
+  if(!deskMap[area+'-'+n]) return null;
+  const xyzDesk=(area==='ク'&&+n>=3&&+n<=36)||(area==='ケ'&&+n>=3&&+n<=7), suf=(m[3]||'').toLowerCase();
+  if(suf&&(/[xyz]/.test(suf)!==xyzDesk)) return null; // x/y/z only on those desks, a/b only elsewhere
+  return {area,num:n+(m[3]||'').toLowerCase()};
+}
+document.getElementById('q').addEventListener('input',search);
+function renderRemoved(){
+  const r=BASE.filter(b=>st.removed[b.id]), ol=document.getElementById('removed'); ol.replaceChildren();
+  r.forEach(b=>{const li=document.createElement('li'); li.className='res';
+    li.innerHTML=`<div class="rn"><b>${esc(b.name)}</b><span>${esc(b.area+'-'+b.num)}</span></div><button class="btn">戻す</button>`;
+    li.querySelector('button').onclick=()=>{delete st.removed[b.id];save();refresh();search()}; ol.appendChild(li)});
+  document.getElementById('removedSec').hidden=!r.length;
+}
+/* ranking list with drag (pointer) and keyboard reordering */
+let toastT=0;
+function toast(msg){const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600)}
+function reordered(){
+  toast(route.length?`巡回ルートを更新しました（最初は ${route[0].name}）`:'並べ替えました');
+}
+// write a reordered group (one building, or everything) back into the global order
+function applyGroupOrder(ids){
+  const set=new Set(ids); let k=0;
+  st.order=st.order.map(id=>set.has(id)?ids[k++]:id);
+}
+function renderRank(focusId){
+  const box=document.getElementById('rank'); box.replaceChildren();
+  document.getElementById('shortWarn').hidden=!(st.mode==='short'&&!st.topFirst);
+  document.getElementById('openRankN').textContent=STOPS.length+'件';
+  document.querySelectorAll('#splitSeg button').forEach(b=>{b.setAttribute('aria-pressed',String(st.split)===(b.dataset.v==='1'?'true':'false'));
+    b.onclick=()=>{st.split=b.dataset.v==='1';save();refresh()}});
+  document.getElementById('splitNote').textContent=(st.split?'第一展示場・第二展示場1F・第二展示場2Fを別々に並べます。1つのフロアを回り終えてから次のフロアへ移るので、行ったり来たりしません。フロアの順番は、スタート地点のフロアから歩く距離が短くなる順に自動で決まります（下のリストもその順に並びます）。':'すべてのブースを1つのリストで並べます。フロアや建物の行き来が増えることがあります。')+' ⠿ をドラッグして並べ替え、上ほど優先です（⠿ にフォーカスして ↑↓ キーでも動かせます）。';
+  const groups=st.split?floorOrder.map(h=>({title:hallName(h),ids:st.order.filter(id=>byId(id).hall===h)})):[{title:'',ids:st.order}];
+  groups.forEach(g=>{
+    if(st.split){const h=document.createElement('h3'); h.className='rank-h'; h.innerHTML=`${g.title}<span>${g.ids.length}件</span>`; box.appendChild(h)}
+    const ol=document.createElement('ol'); ol.className='rank'; box.appendChild(ol);
+    if(!g.ids.length){const li=document.createElement('li'); li.className='note'; li.textContent='ブースがありません'; ol.appendChild(li)}
+  g.ids.map(byId).forEach((s,r)=>{
+    const li=document.createElement('li'); li.className='rk'+(st.done[s.id]?' done':''); li.dataset.id=s.id;
+    li.style.setProperty('--pc',PCOL[tier(s)]);
+    li.innerHTML=`<button class="handle" aria-label="${esc(s.name)}を並べ替え（↑↓キー）">⠿</button><span class="rkn">${r+1}</span>
+      <div class="rkb"><b>${esc(s.name)}</b><span>${esc(s.area+'-'+s.num)} ・ ${hallName(s.hall)}${st.done[s.id]?' ・ 訪問済み':''}</span></div>
+      <button class="rm">外す</button>`;
+    li.querySelector('.rm').onclick=()=>removeStop(s);
+    const h=li.querySelector('.handle');
+    h.onkeydown=e=>{const d=e.key==='ArrowUp'?-1:e.key==='ArrowDown'?1:0; if(!d)return; e.preventDefault();
+      const ids=g.ids.slice(), i=ids.indexOf(s.id), j=i+d; if(j<0||j>=ids.length)return;
+      [ids[i],ids[j]]=[ids[j],ids[i]]; applyGroupOrder(ids); save(); refresh(s.id); reordered();};
+    h.addEventListener('pointerdown',e=>startDrag(e,li,h));
+    ol.appendChild(li);
+  });
+  });
+  if(focusId){const h=box.querySelector(`li[data-id="${CSS.escape(focusId)}"] .handle`); if(h)h.focus()}
+}
+/* 優先順位 sheet: opened from the button or the #rank link, closed by 閉じる, the backdrop or Esc */
+const sheet=document.getElementById('rankSheet');
+let sheetOpener=null;
+function openRank(){
+  if(!sheet.hidden) return;
+  sheetOpener=document.activeElement; sheet.hidden=false; document.body.classList.add('locked');
+  document.getElementById('sheetBody').scrollTop=0; document.getElementById('rankClose').focus();
+}
+function closeRank(){
+  if(sheet.hidden) return;
+  sheet.hidden=true; document.body.classList.remove('locked');
+  if(location.hash==='#rank') history.replaceState(null,'',location.pathname+location.search);
+  if(sheetOpener&&sheetOpener.focus) sheetOpener.focus();
+}
+document.getElementById('openRank').onclick=openRank;
+document.getElementById('rankClose').onclick=closeRank;
+sheet.addEventListener('click',e=>{if(e.target===sheet)closeRank()});
+addEventListener('keydown',e=>{if(e.key==='Escape'){closeRank();closeShare()}});
+document.querySelector('.rank-link').addEventListener('click',e=>{e.preventDefault();openRank()});
+addEventListener('hashchange',()=>{if(location.hash==='#rank')openRank()});
+/* sharing between devices: a snapshot of the list travels as a compact code (in a URL / QR code where the page has a real address) */
+const SHARE_KEYS=['order','custom','removed','done','passed','split','topFirst','topN','mode','start','time'];
+const MODE_NAME={short:'最短距離',flex:'近くを寄り道',strict:'順位どおり'};
+const b64u={
+  enc:buf=>{let s='';buf.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')},
+  dec:t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(t+'==='.slice((t.length+3)%4)),c=>c.charCodeAt(0))}
+};
+const pipe=(bytes,stream)=>new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer().then(b=>new Uint8Array(b));
+async function pack(){
+  const o={v:1}; SHARE_KEYS.forEach(k=>o[k]=st[k]);
+  o.custom=st.custom.map(({id,area,num,name,circle,tw})=>({id,area,num,name,circle,tw}));
+  const bytes=new TextEncoder().encode(JSON.stringify(o));
+  if(window.CompressionStream){try{return 'z'+b64u.enc(await pipe(bytes,new CompressionStream('deflate-raw')))}catch(e){}}
+  return 'j'+b64u.enc(bytes);
+}
+async function unpack(text){
+  let code=String(text).trim(); const m=code.match(/#import=([A-Za-z0-9_-]+)/); if(m) code=m[1];
+  if(!/^[zj][A-Za-z0-9_-]{4,}$/.test(code)) throw new Error('format');
+  let bytes=b64u.dec(code.slice(1));
+  if(code[0]==='z') bytes=await pipe(bytes,new DecompressionStream('deflate-raw'));
+  const o=JSON.parse(new TextDecoder().decode(bytes));
+  if(!isObj(o)||o.v!==1) throw new Error('version');
+  return o;
+}
+function describe(o){
+  const s=sanitize(o), list=[...BASE,...s.custom].filter(b=>!s.removed[b.id]);
+  const done=list.filter(b=>s.done[b.id]).length;
+  return `ブース ${list.length}件（訪問済み ${done}件）・ルート「${MODE_NAME[s.mode]}」`;
+}
+const shareSheet=document.getElementById('shareSheet');
+let pending=null, shareOpener=null;
+function openShare(pane){
+  ['sendPane','recvPane','confirmPane'].forEach(id=>document.getElementById(id).hidden=id!==pane);
+  if(shareSheet.hidden){shareOpener=document.activeElement; shareSheet.hidden=false; document.body.classList.add('locked')}
+  document.getElementById('shareClose').focus();
+}
+function closeShare(){
+  if(shareSheet.hidden) return;
+  shareSheet.hidden=true; pending=null;
+  if(sheet.hidden) document.body.classList.remove('locked');
+  if(location.hash.startsWith('#import=')) history.replaceState(null,'',location.pathname+location.search);
+  if(shareOpener&&shareOpener.focus) shareOpener.focus();
+}
+const canLink=/(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+document.getElementById('shareOut').onclick=async()=>{
+  const code=await pack();
+  document.getElementById('shareCode').value=code;
+  document.getElementById('shareSummary').textContent='送る内容：'+describe(JSON.parse(JSON.stringify({v:1,...st})));
+  const wrap=document.getElementById('qrWrap'); wrap.hidden=!canLink;
+  if(canLink){
+    const url=location.origin+location.pathname+'#import='+code;
+    document.getElementById('shareUrl').value=url;
+    const q=document.getElementById('qr'); q.replaceChildren();
+    if(window.QRCode) new QRCode(q,{text:url,width:440,height:440,correctLevel:QRCode.CorrectLevel.L});
+    else q.textContent='QRコードを表示できませんでした。共有URLかコードを使ってください。';
+  }
+  openShare('sendPane');
+};
+document.getElementById('shareIn').onclick=()=>{document.getElementById('recvCode').value='';document.getElementById('recvMsg').textContent='';openShare('recvPane')};
+document.getElementById('recvGo').onclick=async()=>{
+  try{showConfirm(await unpack(document.getElementById('recvCode').value))}
+  catch(e){document.getElementById('recvMsg').textContent='コードを読み取れませんでした。最後までコピーできているか確認してください。'}
+};
+function showConfirm(o){pending=o; document.getElementById('confirmSummary').textContent='受け取った内容：'+describe(o); openShare('confirmPane')}
+document.getElementById('confirmYes').onclick=()=>{
+  if(!pending) return;
+  const s=sanitize(pending); s.hall=st.hall; s.zoom=st.zoom; s.pin=st.pin; // keep this device's view preferences
+  st=s; save(); closeShare(); refresh(); showHall(st.hall); applyPin(); toast('受け取ったデータを読み込みました');
+};
+document.getElementById('confirmNo').onclick=closeShare;
+document.getElementById('shareClose').onclick=closeShare;
+shareSheet.addEventListener('click',e=>{if(e.target===shareSheet)closeShare()});
+document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{
+  const inp=document.getElementById(b.dataset.copy);
+  navigator.clipboard.writeText(inp.value).then(()=>toast('コピーしました')).catch(()=>{inp.focus();inp.select();toast('選択しました。長押しでコピーしてください')});
+});
+function importFromHash(){
+  if(!location.hash.startsWith('#import=')) return;
+  unpack(location.hash).then(showConfirm).catch(()=>{history.replaceState(null,'',location.pathname+location.search);toast('共有URLを読み取れませんでした')});
+}
+addEventListener('hashchange',importFromHash);
+document.getElementById('toFlex').onclick=()=>{st.mode='flex';save();refresh();toast('ルートを「近くを寄り道」に切り替えました')};
+function startDrag(e,li,h){
+  if(e.button>0) return; e.preventDefault();
+  const ol=li.parentNode, sc=document.getElementById('sheetBody'); let startY=e.clientY+sc.scrollTop;
+  try{h.setPointerCapture(e.pointerId)}catch(_){}
+  li.classList.add('dragging');
+  // the row follows the pointer; it swaps with a neighbour once the pointer passes that neighbour's middle
+  const move=ev=>{
+    const midOf=x=>{const r=x.getBoundingClientRect(); return r.top+r.height/2};
+    for(;;){
+      const next=li.nextElementSibling, prev=li.previousElementSibling, top0=li.offsetTop;
+      if(next&&ev.clientY>midOf(next)) next.after(li);
+      else if(prev&&ev.clientY<midOf(prev)) prev.before(li);
+      else break;
+      startY+=li.offsetTop-top0;
+    }
+    li.style.transform=`translateY(${ev.clientY+sc.scrollTop-startY}px)`;
+    const box=sc.getBoundingClientRect();
+    if(ev.clientY<box.top+60) sc.scrollBy(0,-12); else if(ev.clientY>box.bottom-60) sc.scrollBy(0,12);
+  };
+  const end=()=>{
+    removeEventListener('pointermove',move); removeEventListener('pointerup',end); removeEventListener('pointercancel',end);
+    li.classList.remove('dragging'); li.style.transform='';
+    const ids=[...ol.children].map(x=>x.dataset.id), before=st.order.join();
+    applyGroupOrder(ids);
+    if(st.order.join()!==before){save(); refresh(); reordered()}
+  };
+  addEventListener('pointermove',move); addEventListener('pointerup',end); addEventListener('pointercancel',end);
+}
+function refresh(focusId){rebuildStops();syncOrder();segs();computeD();compute();drawRoute();renderList();renderRank(focusId);renderTabs();renderRemoved();document.getElementById('count').textContent=STOPS.length}
+document.getElementById('reset').onclick=()=>{st.done={};st.passed={};save();refresh()};
+
+/* light / dark toggle: remembered per browser; without a choice the OS setting applies */
+const THEME_KEY='m3-2027s-route-theme', root=document.documentElement, themeBtn=document.getElementById('themeBtn');
+const SUN='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>';
+const MOON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+function paintThemeBtn(){const d=isDark(); themeBtn.innerHTML=d?SUN:MOON; themeBtn.setAttribute('aria-label',d?'ライトモードに切り替え':'ダークモードに切り替え'); themeBtn.title=themeBtn.getAttribute('aria-label')}
+try{const t=localStorage.getItem(THEME_KEY); if(t==='light'||t==='dark') root.dataset.theme=t}catch(e){}
+themeBtn.onclick=()=>{const t=isDark()?'light':'dark'; root.dataset.theme=t; try{localStorage.setItem(THEME_KEY,t)}catch(e){} paintThemeBtn(); renderSwatches()};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{paintThemeBtn();renderSwatches()});
+paintThemeBtn();
+
+/* color themes (theme.js): swatches show each theme's accent pair, split diagonally */
+const colorBtn=document.getElementById('colorBtn'), colorPop=document.getElementById('colorPop');
+function renderSwatches(){
+  const box=document.getElementById('colorSwatches'); if(!window.M3Theme){colorBtn.hidden=true;return}
+  box.replaceChildren(); const i=isDark()?1:0, cur=M3Theme.current();
+  M3Theme.themes.forEach(t=>{
+    const b=document.createElement('button'); b.className='sw-btn'; b.title=b.ariaLabel=t.name; b.setAttribute('aria-label',t.name);
+    b.style.setProperty('--c',`linear-gradient(135deg,${t.a[i]} 50%,${t.b[i]} 50%)`);
+    b.setAttribute('aria-pressed',t.id===cur);
+    b.onclick=()=>{M3Theme.set(t.id); renderSwatches(); toast(`テーマ「${t.name}」にしました`)};
+    box.appendChild(b);
+  });
+}
+function toggleColorPop(open){
+  colorPop.hidden=!open; colorBtn.setAttribute('aria-expanded',open);
+  if(open){renderSwatches(); colorPop.querySelector('[aria-pressed="true"]')?.focus()}
+}
+colorBtn.onclick=e=>{e.stopPropagation(); toggleColorPop(colorPop.hidden)};
+document.addEventListener('click',e=>{if(!colorPop.hidden&&!colorPop.contains(e.target)) toggleColorPop(false)});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!colorPop.hidden){toggleColorPop(false);colorBtn.focus()}});
+addEventListener('storage',e=>{if(e.key==='m3-2027s-route-color') renderSwatches()});
+renderSwatches();
+
+buildMaps(); refresh(); showHall(st.hall); applyPin(); importFromHash();
+if(location.hash==='#rank') openRank();
+addEventListener('resize',()=>applyZoom());
+</script>
+</body>
+</html>

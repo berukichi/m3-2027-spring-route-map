@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="berukichi">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M3春2027 巡回マップの使い方</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23c2346d'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='6.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 46V18l11 15 11-15v28'/%3E%3Cpath d='M38 19h10a6.5 6.5 0 0 1 0 13h-5h5a6.5 6.5 0 0 1 0 13H38'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;800&family=M+PLUS+Rounded+1c:wght@800&family=JetBrains+Mono:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<script>
+// apply the theme chosen on the map page before first paint
+try{const t=localStorage.getItem('m3-2027s-route-theme'); if(t==='light'||t==='dark') document.documentElement.dataset.theme=t}catch(e){}
+</script>
+<style>
+/* Layout: a single reading column with a sticky table of contents row; same palette and type as the map */
+:root{
+  --bg:#f4f3f9; --surface:#ffffff; --raise:#eceaf5; --ink:#1d1b33; --muted:#686583; --line:#d8d5e7; --accent:#c2346d; --ok:#2b8a57;
+  --f-display:"Oxanium","M PLUS Rounded 1c","Zen Kaku Gothic New",system-ui,sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#13121d;--surface:#1d1b2c;--raise:#26243a;--ink:#ecebf6;--muted:#a3a0bf;--line:#34314c;--accent:#ff6c9f;--ok:#5cc98a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#13121d;--surface:#1d1b2c;--raise:#26243a;--ink:#ecebf6;--muted:#a3a0bf;--line:#34314c;--accent:#ff6c9f;--ok:#5cc98a;color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75;padding-inline:16px;padding-block:0 56px}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+header{padding-top:18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.back{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-weight:700;font-size:.88rem;text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:5px 12px}
+.back:hover{background:var(--raise)}
+h1{font-family:var(--f-display);font-weight:800;font-size:1.5rem;line-height:1.25;margin:0;text-wrap:balance;letter-spacing:.02em}
+h1 .lat{font-weight:600;font-size:1.12em;letter-spacing:.05em}
+h1 em{font-style:normal;color:var(--accent)}
+.lead{margin:6px 0 0;color:var(--muted);font-size:.9rem}
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:2;background:var(--bg);padding-block:8px;border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+nav.toc::-webkit-scrollbar{display:none}
+nav.toc a{display:inline-block;margin-right:6px;padding:4px 11px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-size:.8rem;background:var(--surface)}
+nav.toc a:hover{border-color:var(--accent);color:var(--accent)}
+section{display:flex;flex-direction:column;gap:10px;scroll-margin-top:60px}
+h2{font-size:1.08rem;margin:0;display:flex;align-items:baseline;gap:10px;text-wrap:balance}
+h3{font-size:.95rem;margin:8px 0 0}
+figure.shot{margin:8px 0 4px;display:flex;flex-direction:column;gap:6px;max-width:620px}
+figure.shot img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#13121d}
+figure.shot figcaption{font-size:.8rem;color:var(--muted)}
+section>figure.shot{max-width:420px}
+.example{align-self:flex-start;font-size:.84rem;font-weight:700;color:var(--accent);background:var(--raise);border-radius:8px;padding:3px 10px}
+.note-s{font-size:.78rem;color:var(--muted)}
+ol ul{margin-top:4px;font-size:.92em}
+h2 .n{font:700 .8rem var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 8px;flex:none}
+p{margin:0;max-width:65ch}
+ol,ul{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:4px;max-width:65ch}
+b,strong{font-weight:700}
+.ui{display:inline-block;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:0 6px;font-size:.86em;line-height:1.6;white-space:nowrap}
+.ui.accent{border-color:var(--accent);color:var(--accent);font-weight:700}
+.tip{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:.88rem;color:var(--muted)}
+.tip b{color:var(--ink)}
+.modes{display:grid;gap:8px}
+.mode{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.mode b{font-size:.95rem}
+.mode span{font-size:.86rem;color:var(--muted)}
+.mode .def{font:700 .7rem var(--f-body);color:var(--accent);margin-left:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.86rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none}
+.sq{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+dl{margin:0;display:flex;flex-direction:column;gap:12px}
+dt{font-weight:700}
+dd{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+footer{border-top:1px solid var(--line);padding-top:12px;font-size:.75rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+footer span:first-child{font-family:var(--f-mono);color:var(--ink)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+<script src="theme.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="lat">M3</span><em>春</em><span class="lat">2027</span> 巡回マップの使い方</h1>
+      <p class="lead">回りたいブースを地図に並べて、当日の巡回ルートを出すためのツールです。M3春2027は2027年4月25日(日) 10:30〜、東京流通センターで開催されます。</p>
+    </div>
+  </header>
+  <a class="back" id="back" href="./">‹ マップに戻る</a>
+
+  <nav class="toc" aria-label="目次">
+    <a href="#start">はじめに</a><a href="#add">ブースの登録</a><a href="#rank">優先順位</a><a href="#route">ルート</a><a href="#gate">スタート・時間帯</a><a href="#map">地図の見方</a><a href="#day">当日の使い方</a><a href="#share">端末間の共有</a><a href="#data">データの保存</a><a href="#faq">困ったとき</a>
+  </nav>
+
+  <section id="start">
+    <h2><span class="n">1</span>はじめに</h2>
+    <p>準備は次の3つだけです。前日までにPCで済ませて、スマホに送っておくのがおすすめです。</p>
+    <ol>
+      <li>回りたいブースを追加する</li>
+      <li>優先順位を並べ替える</li>
+      <li>ルートの種類とスタート地点を選ぶ</li>
+    </ol>
+    <p>あとは当日、上から順に回って「訪問済み」にチェックを入れていくだけです。</p>
+  </section>
+
+  <section id="add">
+    <h2><span class="n">2</span>ブースを登録する（追加・外す）</h2>
+
+    <h3>2-1. まずブース番号を調べる</h3>
+    <p>登録にはブース番号（スペース番号）を使います。番号は次のような場所で確認できます。</p>
+    <ul>
+      <li>サークルのX（旧Twitter）の告知ポストや、名前欄（例：「M3春 コ-21b」）</li>
+      <li>お品書きや新譜の告知画像（「第一展示場 2F V-28ab」のように書かれていることが多いです）</li>
+      <li>CDの特設サイトの「BOOTH」「SPACE」などの欄</li>
+      <li>M3公式のWebカタログ（catalog.m3net.jp）</li>
+    </ul>
+
+    <h3>2-2. ブース番号の読み方</h3>
+    <p>ブース番号は「<b>記号-数字</b>」の後ろに a / b / ab（一部は x / y / z）が付いた形です。</p>
+    <ul>
+      <li><b>記号</b>で会場が分かります。アルファベット（A〜V）は<b>第一展示場</b>、ひらがな（あ〜か）は<b>第二展示場 1F</b>、カタカナ（キ〜シ）は<b>第二展示場 2F</b>です。</li>
+      <li><b>数字</b>は机の番号です。</li>
+      <li><b>a / b</b> は机の左右どちら側か、<b>ab</b> は机1つ分（2スペース）を使うサークルです。</li>
+      <li><b>x / y / z</b>：第二展示場 2F の<b>ク-03〜ク-36</b>と<b>ケ-03〜ケ-07</b>は、1つの机を3つに分けていて、a / b の代わりに x / y / z が付きます（例：<b>ク-10x</b>、<b>ケ-05z</b>）。</li>
+    </ul>
+
+    <h3>2-3. 登録の手順</h3>
+    <p class="example">登録例：月乃さん（コ-21b）</p>
+    <ol>
+      <li>ページの下の方にある<span class="ui">ブースを追加</span>の入力欄をタップします。</li>
+      <li>ブース番号を入力します。例：<b>コ-21b</b>、<b>T-15ab</b>、<b>あ-04a</b>、<b>ク-10x</b>
+        <ul>
+          <li>全角（Ｔ－１５ａｂ）や小文字（t15ab）でも大丈夫です。</li>
+          <li>ハイフンは省略できます（コ21b）。数字が1桁なら「T-5」のように入れても「T-05」として扱います。</li>
+        </ul>
+      </li>
+      <li>正しい番号なら、入力欄の下に「<b>コ-21b ・ 第二展示場 2F</b>」のような候補が出ます。会場名も一緒に出るので、番号が合っているかをここで確かめられます。
+        <figure class="shot"><img src="img/add-1-candidate.png" width="1096" height="265" alt="入力欄に「コ-21b」と入力し、その下に「コ-21b ・ 第二展示場 2F」という候補と、空の名前欄、追加ボタンが表示された画面" loading="lazy"><figcaption>「コ-21b」と入力したところ。すぐ下に候補が出ます。</figcaption></figure>
+      </li>
+      <li>候補の中の<span class="ui">名前（任意）</span>に、サークル名や作家さんの名前を入れます。空のままでも登録でき、その場合はブース番号が名前として表示されます。
+        <figure class="shot"><img src="img/add-2-name.png" width="1096" height="265" alt="候補の名前欄に「月乃」と入力した画面" loading="lazy"><figcaption>名前欄に「月乃」と入れたところ。</figcaption></figure>
+      </li>
+      <li><span class="ui accent">追加</span>を押すと登録されます。</li>
+    </ol>
+    <p>登録したブースは、すぐに地図とルートに反映されます。優先順位は<b>その建物のリストの一番下</b>に入るので、必要に応じて「優先順位を並べ替える」で上へ動かしてください。</p>
+    <figure class="shot"><img src="img/add-3-result.png" width="869" height="1372" alt="追加後の画面。第二展示場2Fの地図でコ-21の机に1番の印が付き、エスカレーターから点線が引かれている。下の巡回ルートに「1 月乃 コ-21b 第二展示場 2F」が表示されている" loading="lazy"><figcaption>追加したあと。地図の「コ-21」の机に巡回順の番号が付き、下の巡回ルートにも「月乃 コ-21b」が出ます。</figcaption></figure>
+    <p class="note-s">※ 画面は、月乃さん（コ-21b）を登録する例です（ダーク表示）。</p>
+
+    <div class="tip"><b>サークル名で探す：</b>18ブース入り版（/my/）では、ブース番号のほかに<b>サークル名・よみ・Xのアカウント名</b>でも検索できます。候補にブース番号と会場が出るので、<span class="ui accent">追加</span>を押すだけで登録できます（名前の入力は不要です）。</div>
+    <div class="tip"><b>登録のコツ：</b>同じ机（例：コ-21a と コ-21b、ク-10x と ク-10y）のサークルも、それぞれ別に登録できます。机1つ分のサークル（ab）は「ab」まで入れておくと、番号が見分けやすくなります。</div>
+
+    <h3>2-4. うまく登録できないとき</h3>
+    <ul>
+      <li><b>候補が出ない：</b>その番号の机が会場マップにありません。記号（ひらがな／カタカナ）の打ち間違いがないか、番号が合っているかを確認してください。ク-03〜36・ケ-03〜07 は x / y / z、それ以外は a / b / ab なので、記号の組み合わせが違っていても候補は出ません。</li>
+      <li><b>「藍-01」などの番号が登録できない：</b>「藍」はカタログ参加枠で、会場にはスペースがありません。そのため地図には登録できません。</li>
+      <li><b>「すでにリストにあります」と出る：</b>同じブース番号がもう登録されています。</li>
+      <li><b>名前を間違えた：</b>名前だけを直す機能はないので、一度「外す」で外してから、正しい名前で登録し直してください。</li>
+    </ul>
+
+    <h3>2-5. 登録したブースを外す・戻す</h3>
+    <ol>
+      <li><span class="ui accent">優先順位を並べ替える</span>を押して、優先順位の画面を開きます。</li>
+      <li>外したいブースの右にある<span class="ui">外す</span>を押します。地図とルートからすぐに消えます。</li>
+    </ol>
+    <p>あとから登録したブースは、外すと削除されます（もう一度使うときは登録し直してください）。はじめから入っているブースを外した場合は、ページ下の「リストから外したブース」に残り、<span class="ui accent">戻す</span>で元に戻せます。</p>
+  </section>
+
+  <section id="rank">
+    <h2><span class="n">3</span>優先順位を決める</h2>
+    <ol>
+      <li><span class="ui accent">優先順位を並べ替える</span>ボタン（または巡回ルートの見出し横のリンク）を押します。</li>
+      <li>開いた画面で、各ブースの左にある <b>⠿</b> をドラッグして上下に動かします。上ほど優先です。</li>
+      <li>並べ替えると、画面下に「巡回ルートを更新しました」と表示され、ルートがすぐ変わります。</li>
+    </ol>
+    <p>並べ方は2種類あります。</p>
+    <ul>
+      <li><b>フロアごと</b>（初期設定）：第一展示場・第二展示場1F・第二展示場2Fを別々に並べます。1つのフロアを回り終えてから次のフロアへ移るので、行ったり来たりしません。フロアの順番は、スタート地点のフロアから歩く距離が短くなる順に自動で決まり、優先順位の画面もその順に並びます。</li>
+      <li><b>まとめて</b>：全ブースを1つのリストで並べます。フロアや建物の行き来が増えることがあります。</li>
+    </ul>
+  </section>
+
+  <section id="route">
+    <h2><span class="n">4</span>ルートの種類を選ぶ</h2>
+    <p>地図の下にある3つのタブで切り替えます。</p>
+    <div class="modes">
+      <div class="mode"><b>最短距離<span class="def">初期設定</span></b><span>優先順位1位のブースから回り始め、そこから歩く距離が短い順に回ります。タブの下の「上位 ○ 位」で、何位までを先に回るかを決められます（初期設定は5位。6位以下は後回し）。スイッチをオフにすると、1位以外は距離だけで決まります。</span></div>
+      <div class="mode"><b>近くを寄り道</b><span>上位3件の中から近いブースを先に回ります。どのブースも本来の順位から2つより後ろには下がりません。</span></div>
+      <div class="mode"><b>順位どおり</b><span>優先順位の通りに回ります。</span></div>
+    </div>
+  </section>
+
+  <section id="gate">
+    <h2><span class="n">5</span>スタート地点と時間帯</h2>
+    <p>ルートのタブの下にある<span class="ui">スタート … 時間帯 …　<span style="color:var(--accent);font-weight:700">変更 ⌄</span></span>を押すと選べます。</p>
+    <ul>
+      <li><b>第一展示場</b>は入口と出口が別です。開場直後は<b>南入口</b>からしか入れません。第二展示場へ移るときは<b>北側の出口</b>から出ます。</li>
+      <li>時間帯を<b>午後</b>にすると、第一展示場の<b>北入口</b>も使うルートになります（スタート地点にも選べるようになります）。</li>
+      <li><b>第二展示場</b>は、開場前は1Fの西側（地図の左外）に<b>待機列</b>ができ、開場（10:30）後に列ごとに<b>南西の入口</b>から入場します。開場直後のルートはこの入口から始まります。午後は東側の入口を使うルートになります。スタート地点の「第二 1F入口」は、時間帯に合わせてどちらかの入口になります。</li>
+      <li><b>第二展示場1F</b>も入口と出口が別で、出口は東側の入口のすぐ北側です。</li>
+    </ul>
+  </section>
+
+  <section id="map">
+    <h2><span class="n">6</span>地図の見方</h2>
+    <ul>
+      <li>上のタブで<b>第一展示場 2F / 第二展示場 1F / 第二展示場 2F</b>を切り替えます。各タブには残りのブース数が出ます。</li>
+      <li>地図は指でスクロールでき、右下の<span class="ui">＋</span><span class="ui">−</span>で拡大・縮小します。</li>
+      <li><span class="ui accent">固定</span>を押すと、地図を画面の上に固定したままルートのリストをスクロールできます（初期設定はオン）。もう一度押すと解除します。</li>
+      <li>丸の中の数字が巡回の順番です。点線が移動の目安です（実際は通路を歩いてください）。</li>
+      <li>同じ机や隣の机に複数のブースがあるときは、<b>先に回るブースの番号を大きく</b>机の上に表示し、あとで回るブースの番号は小さくして横に表示します（細い線で机とつながっています）。</li>
+      <li>次に回るブースには「<b>次 ▸ サークル名（ブース番号）</b>」の吹き出しが付き、丸が脈打つように光ります。</li>
+    </ul>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--accent)"></span>優先順位 上位</span>
+      <span><span class="dot" style="background:#7f96ff"></span>中位</span>
+      <span><span class="dot" style="background:var(--muted)"></span>下位</span>
+      <span><span class="dot" style="background:var(--ok)"></span>訪問済み</span>
+      <span><span class="sq" style="background:var(--ok)"></span>入口・エスカレーター</span>
+      <span><span class="sq" style="background:var(--muted)"></span>出口</span>
+    </div>
+  </section>
+
+  <section id="day">
+    <h2><span class="n">7</span>当日の使い方</h2>
+    <ol>
+      <li>巡回ルートのリストを上から順に回ります。サークル名を押すと、地図がそのブースの位置に移動します。</li>
+      <li>買い物が終わったら<span class="ui">訪問済み</span>にチェックを入れます。そのブースはルートから外れ、残りでルートを計算し直します。地図は自動で<b>次のブース</b>の位置に移動し、画面下に「次は ○○（ブース番号）」と表示されます。</li>
+      <li>混んでいる・あとで回りたいときは<span class="ui">パス</span>を押します。そのブースはリストの一番下（「パスしたブース」の下）に回り、地図にもそのまま表示されます。戻したいときは<span class="ui">パスを取り消す</span>を押します。</li>
+      <li>午後になったら、時間帯を<b>午後</b>に切り替えると第一展示場の北入口も使えるようになります。</li>
+    </ol>
+    <p class="tip"><b>ヒント：</b>右上の太陽／月のボタンで、ライト表示とダーク表示を切り替えられます。会場で画面がまぶしいときはダーク表示がおすすめです。パレットのボタンからは、配色のテーマ（さくら・オーシャン・ミントなど10種類）を選べます。選んだテーマはマニュアルにも反映されます。</p>
+  </section>
+
+  <section id="share">
+    <h2><span class="n">8</span>PCとスマホでリストを共有する</h2>
+    <ol>
+      <li>送る側（例：PC）で、ページ下の<span class="ui accent">この端末のデータを送る</span>を押します。</li>
+      <li>受け取る側（例：スマホ）のカメラで<b>QRコード</b>を読み取ります。共有URLを自分宛てに送って開いたり、<span class="ui">コードで受け取る</span>に共有コードを貼り付けたりしても大丈夫です。</li>
+      <li>「置き換えますか？」と出たら、内容を確かめて<span class="ui accent">置き換える</span>を押します。</li>
+    </ol>
+    <p>ブース・優先順位・訪問済み・ルートの設定がそのまま写ります。自動では同期しないので、PCで直したあとは、もう一度送ってください。</p>
+  </section>
+
+  <section id="data">
+    <h2><span class="n">9</span>データの保存について</h2>
+    <p>データは使っている端末のブラウザの中だけに保存され、サーバーには送られません。ほかの人とデータが混ざることもありません。ブラウザの履歴やサイトデータを消すと、保存した内容も消えるので注意してください。</p>
+  </section>
+
+  <section id="faq">
+    <h2><span class="n">10</span>困ったとき</h2>
+    <dl>
+      <div><dt>並べ替えても巡回ルートが変わらない</dt><dd>ルートが「最短距離」で、「上位 ○ 位」のスイッチがオフになっていないか確認してください。このときは1位以外の順位はルートに使われません。</dd></div>
+      <div><dt>「第一 北入口」が選べない</dt><dd>開場直後は南入口からしか入れないためです。時間帯を「午後」にすると選べます。</dd></div>
+      <div><dt>表示が新しくならない</dt><dd>ページを再読み込みしてください。</dd></div>
+      <div><dt>ブース番号を入れても候補が出ない</dt><dd>その番号の机が会場マップにない可能性があります。公式カタログで番号を確認してください。</dd></div>
+    </dl>
+  </section>
+
+  <a class="back" href="./" data-back>‹ マップに戻る</a>
+
+  <footer>
+    <span>© 2026–2027 berukichi</span>
+    <span>配置データ: M3 Webカタログ（catalog.m3net.jp/2026f）の会場マップより（M3春2027の会場配置と出展者が発表されるまでは、M3秋2026のデータを仮に使っています）。非公式のファンメイドツールです。</span>
+    <span>このツールは個人が趣味で作ったものです。マップ上の位置がずれていた、表示された順に回ったら目当ての頒布物が売り切れていた、といったことを含め、使ったことで生じた不都合には責任を負いかねます。ごめんなさい。最新の情報は公式カタログや各サークルの告知でご確認ください。</span>
+  </footer>
+</div>
+<script>
+// "マップに戻る" returns to whichever version (ブランク版 / 18ブース版) opened this page
+document.querySelectorAll('.back').forEach(a=>{
+  try{const r=document.referrer&&new URL(document.referrer); if(r&&r.origin===location.origin&&!r.pathname.endsWith('help.html')) a.href=r.pathname+r.search}catch(e){}
+});
+</script>
+</body>
+</html>
