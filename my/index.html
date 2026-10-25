@@ -384,7 +384,7 @@ body.locked{overflow:hidden}
       <div class="pane" id="postPane" hidden>
         <div class="field"><span>ポストする文章</span><textarea id="postText" rows="4"></textarea></div>
         <p class="note" id="postNote" style="margin:0"></p>
-        <div class="sharebtns"><button class="btn solid" id="postGo">Xで共有</button><a class="btn solid" id="postIntent" target="_blank" rel="noopener" hidden>Xの投稿画面を開く</a><button class="btn ghost" id="postBack">やめる</button></div>
+        <div class="sharebtns"><button class="btn ghost" id="postBack">やめる</button></div>
       </div>
     </div>
   </div>
@@ -1044,7 +1044,7 @@ function startDrag(e,li,h){
 const CAM_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h4L9 5.5h6l2 3h4V19H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg>';
 const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const camInput=document.getElementById('camInput'), photoSheet=document.getElementById('photoSheet');
-const postText=document.getElementById('postText'), postGo=document.getElementById('postGo'), postIntent=document.getElementById('postIntent');
+const postText=document.getElementById('postText'), postBtn=document.getElementById('photoPost'), postPane=document.getElementById('postPane');
 let camFor=null, photo=null, photoOpener=null;
 function openCamera(s){camFor=s; camInput.value=''; camInput.click()}
 // Phone cameras store the sensor image as is plus an EXIF "Orientation" tag. Browsers disagree on whether drawing to a canvas
@@ -1087,13 +1087,14 @@ camInput.onchange=async()=>{
   try{showPhoto(await shrink(f),camFor)}catch(e){toast('写真を読み込めませんでした')}
 };
 function showPhoto(blob,s){
+  const text=photo&&photo.s===s?photo.text:null; // 撮り直す keeps the text already written for this booth
   if(photo) URL.revokeObjectURL(photo.url);
   const t=new Date(), p=n=>String(n).padStart(2,'0');
   const file=new File([blob],`m3-2027s_${t.getFullYear()}${p(t.getMonth()+1)}${p(t.getDate())}_${p(t.getHours())}${p(t.getMinutes())}${p(t.getSeconds())}.jpg`,{type:'image/jpeg'});
-  photo={file,url:URL.createObjectURL(file),s};
+  photo={file,url:URL.createObjectURL(file),s,text};
   const img=document.getElementById('photoImg'); img.src=photo.url; img.alt=`${s.name}（${s.area}-${s.num}）で撮った写真`;
   document.getElementById('photoTitle').textContent=`戦利品 — ${s.name}（${s.area}-${s.num}）`;
-  document.getElementById('photoHint').hidden=true; document.getElementById('postPane').hidden=true;
+  document.getElementById('photoHint').hidden=true; closePost();
   if(photoSheet.hidden){photoOpener=document.activeElement; photoSheet.hidden=false; document.body.classList.add('locked')}
   document.getElementById('photoClose').focus();
 }
@@ -1118,27 +1119,30 @@ document.getElementById('photoSave').onclick=()=>{
   const a=document.createElement('a'); a.href=photo.url; a.download=photo.file.name; document.body.appendChild(a); a.click(); a.remove();
   toast('写真を保存しました（ダウンロード）');
 };
-const intentUrl=()=>'https://x.com/intent/post?text='+encodeURIComponent(postText.value);
-postText.oninput=()=>postIntent.href=intentUrl();
-document.getElementById('photoPost').onclick=()=>{
+// ポストする opens the text box and then turns into the button that sends it, so a second tap never throws the edited text away
+function closePost(){postPane.hidden=true; postBtn.textContent='ポストする'}
+postText.oninput=()=>{if(photo) photo.text=postText.value};
+postBtn.onclick=()=>{
   if(!photo) return;
-  const s=photo.s, direct=canShareFile();
-  postText.value=`M3春2027の戦利品！\n${s.name}（${s.area}-${s.num}）\n#M3春2027`;
-  postIntent.href=intentUrl(); postGo.hidden=!direct; postIntent.hidden=direct;
+  const direct=canShareFile();
+  if(!postPane.hidden){sendPost(direct); return}
+  const s=photo.s;
+  if(photo.text==null) photo.text=`M3春2027の戦利品！\n${s.name}（${s.area}-${s.num}）\n#M3春2027`;
+  postText.value=photo.text;
+  postBtn.textContent=direct?'Xで共有':'Xを開く';
   document.getElementById('postNote').textContent=direct
-    ?'「Xで共有」を押すと共有メニューが開くので、「X」を選んでください。写真が添付された投稿画面が開きます。文章が入っていないときは、コピー済みの文章を貼り付けてください。'
-    :'この端末のブラウザでは、写真をXのアプリに直接渡せません。先に「保存」で写真を保存してから「Xの投稿画面を開く」を押し、投稿画面で保存した写真を添付してください。';
-  document.getElementById('photoHint').hidden=true; document.getElementById('postPane').hidden=false; postText.focus();
+    ?'文章を直したら、上の「Xで共有」を押してください。共有メニューが開くので「X」を選ぶと、写真が添付された投稿画面が開きます。文章が入っていないときは、コピー済みの文章を貼り付けてください。'
+    :'この端末のブラウザでは、写真をXのアプリに直接渡せません。先に「保存」で写真を保存してから上の「Xを開く」を押し、開いた投稿画面で保存した写真を添付してください。';
+  document.getElementById('photoHint').hidden=true; postPane.hidden=false; postText.focus();
 };
-postGo.onclick=()=>{
-  if(!photo) return;
+function sendPost(direct){
   const text=postText.value;
   // some apps (X on iPhone among them) drop text that comes with a photo, so it also goes to the clipboard
   if(navigator.clipboard) navigator.clipboard.writeText(text).catch(()=>{});
-  navigator.share({files:[photo.file],text}).catch(e=>{if(e.name!=='AbortError') toast('共有できませんでした。「保存」してからXのアプリで投稿してください')});
-};
-postIntent.onclick=()=>{if(navigator.clipboard) navigator.clipboard.writeText(postText.value).catch(()=>{})};
-document.getElementById('postBack').onclick=()=>{document.getElementById('postPane').hidden=true};
+  if(direct) navigator.share({files:[photo.file],text}).catch(e=>{if(e.name!=='AbortError') toast('共有できませんでした。「保存」してからXのアプリで投稿してください')});
+  else window.open('https://x.com/intent/post?text='+encodeURIComponent(text),'_blank','noopener');
+}
+document.getElementById('postBack').onclick=closePost;
 
 function refresh(focusId){rebuildStops();syncOrder();segs();computeD();compute();drawRoute();renderList();renderRank(focusId);renderTabs();renderRemoved();document.getElementById('count').textContent=STOPS.length}
 document.getElementById('reset').onclick=()=>{st.done={};st.passed={};save();refresh()};
