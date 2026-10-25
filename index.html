@@ -1029,13 +1029,38 @@ const camInput=document.getElementById('camInput'), photoSheet=document.getEleme
 const postText=document.getElementById('postText'), postGo=document.getElementById('postGo'), postIntent=document.getElementById('postIntent');
 let camFor=null, photo=null, photoOpener=null;
 function openCamera(s){camFor=s; camInput.value=''; camInput.click()}
+// Phone cameras store the sensor image as is plus an EXIF "Orientation" tag. Browsers disagree on whether drawing to a canvas
+// applies that tag, so it is read here and reset to 1 in the bytes; the browser then always decodes the raw image and we rotate it ourselves.
+function takeOrientation(buf){
+  try{
+    const v=new DataView(buf); if(v.getUint16(0)!==0xFFD8) return 1;
+    for(let o=2;o+10<v.byteLength;){
+      const m=v.getUint16(o); if((m&0xFF00)!==0xFF00||m===0xFFDA) break;
+      if(m===0xFFE1&&v.getUint32(o+4)===0x45786966){ // APP1 "Exif"
+        const t=o+10, le=v.getUint16(t)===0x4949, ifd=t+v.getUint32(t+4,le), n=v.getUint16(ifd,le);
+        for(let i=0;i<n;i++){
+          const e=ifd+2+i*12;
+          if(v.getUint16(e,le)===0x0112){const val=v.getUint16(e+8,le); v.setUint16(e+8,1,le); return val>=1&&val<=8?val:1}
+        }
+        return 1;
+      }
+      o+=2+v.getUint16(o+2);
+    }
+  }catch(e){}
+  return 1;
+}
+// canvas transforms that turn the raw image upright, by EXIF orientation (cw/ch: the upright canvas size)
+const ORIENT={2:(w,h)=>[-1,0,0,1,w,0],3:(w,h)=>[-1,0,0,-1,w,h],4:(w,h)=>[1,0,0,-1,0,h],5:()=>[0,1,1,0,0,0],6:(w,h)=>[0,1,-1,0,w,0],7:(w,h)=>[0,-1,-1,0,w,h],8:(w,h)=>[0,-1,1,0,0,h]};
 async function shrink(file){
-  const url=URL.createObjectURL(file);
+  const buf=await file.arrayBuffer(), rot=takeOrientation(buf);
+  const url=URL.createObjectURL(new Blob([buf],{type:file.type}));
   try{
     const img=new Image(); img.src=url; await img.decode();
     const k=Math.min(1,2048/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas');
-    c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k);
-    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    const dw=Math.round(img.naturalWidth*k), dh=Math.round(img.naturalHeight*k);
+    [c.width,c.height]=rot>=5?[dh,dw]:[dw,dh];
+    const g=c.getContext('2d'); if(ORIENT[rot]) g.transform(...ORIENT[rot](c.width,c.height));
+    g.drawImage(img,0,0,dw,dh);
     return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('encode')),'image/jpeg',.9));
   }finally{URL.revokeObjectURL(url)}
 }
