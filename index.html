@@ -6,6 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>M3春2027 巡回マップ</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23c2346d'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='6.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 46V18l11 15 11-15v28'/%3E%3Cpath d='M38 19h10a6.5 6.5 0 0 1 0 13h-5h5a6.5 6.5 0 0 1 0 13H38'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f4f3f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13121d" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="M3春2027">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;800&family=M+PLUS+Rounded+1c:wght@800&family=JetBrains+Mono:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
 <style>
@@ -110,6 +118,17 @@ ol.route{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;g
 .stop.passed .num{background:var(--p3)}
 .move.passsep{color:var(--muted)}
 .chk input{accent-color:var(--ok);margin:0}
+/* 戦利品カメラ */
+.cambtn{appearance:none;display:inline-grid;place-items:center;width:38px;height:28px;padding:0;border:1px solid var(--accent);border-radius:8px;background:transparent;color:var(--accent);cursor:pointer}
+.cambtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.camrow{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.camrow h2{margin:0}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+.photo{display:block;max-width:100%;max-height:52vh;margin:0 auto;border-radius:12px;background:var(--raise)}
+.photobtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.photobtns .btn{padding:10px 6px;font-size:.88rem}
+#postText{width:100%;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
+a.btn{text-decoration:none;text-align:center}
 .move{font-size:.8rem;color:var(--accent);font-weight:700;padding:2px 4px 2px 44px;display:flex;align-items:center;gap:6px}
 h2{font-size:.78rem;letter-spacing:.1em;color:var(--muted);margin:10px 0 0;font-weight:700}
 .note{font-size:.75rem;color:var(--muted)}
@@ -295,6 +314,10 @@ body.locked{overflow:hidden}
     <h2>訪問済み</h2>
     <ol class="route" id="done"></ol>
   </section>
+  <section class="panel cambox">
+    <div class="camrow"><h2>戦利品カメラ</h2><input type="checkbox" class="sw" id="camOn" aria-label="戦利品カメラを使う"></div>
+    <p class="note" style="margin:0">オンにすると、巡回ルートの各ブースにカメラのボタンが付きます。押すと訪問済みになってカメラが起動し、撮った写真を保存したりXに投稿したりできます。写真はこの端末の中だけで扱い、どこにも送りません。</p>
+  </section>
   <section class="panel sharebox">
     <h2>ほかの端末と共有</h2>
     <p class="note" style="margin:0">PCで作ったリストをスマホで見るときなどに。ブース・優先順位・訪問済み・ルート設定を、そのままほかの端末へ写せます。</p>
@@ -346,6 +369,22 @@ body.locked{overflow:hidden}
         <p class="note" style="margin:0" id="confirmSummary"></p>
         <p class="note" style="margin:0">この端末にある今のブース・優先順位・訪問済み・ルート設定は上書きされます。地図の拡大率や固定の設定はそのままです。</p>
         <div class="sharebtns"><button class="btn solid" id="confirmYes">置き換える</button><button class="btn ghost" id="confirmNo">やめる</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<input type="file" id="camInput" class="vh" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+<div class="sheet" id="photoSheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="photoTitle">
+    <div class="sheet-head"><h2 id="photoTitle">戦利品</h2><button class="btn" id="photoClose">閉じる</button></div>
+    <div class="sheet-body">
+      <img id="photoImg" class="photo" alt="">
+      <div class="photobtns"><button class="btn solid" id="photoSave">保存</button><button class="btn solid" id="photoPost">ポストする</button><button class="btn ghost" id="photoRetake">撮り直す</button></div>
+      <p class="note" id="photoHint" style="margin:0" hidden></p>
+      <div class="pane" id="postPane" hidden>
+        <div class="field"><span>ポストする文章</span><textarea id="postText" rows="4"></textarea></div>
+        <p class="note" id="postNote" style="margin:0"></p>
+        <div class="sharebtns"><button class="btn solid" id="postGo">Xで共有</button><a class="btn solid" id="postIntent" target="_blank" rel="noopener" hidden>Xの投稿画面を開く</a><button class="btn ghost" id="postBack">やめる</button></div>
       </div>
     </div>
   </div>
@@ -448,7 +487,7 @@ function orderFrom(start,items){
 
 /* state */
 const KEY='m3-2027s-route-blank';
-const DEFAULTS=()=>({order:[],split:true,pin:true,topFirst:true,topN:5,done:{},passed:{},start:'e1s',time:'am',mode:'short',hall:'H1',zoom:{},custom:[],removed:{}});
+const DEFAULTS=()=>({order:[],split:true,pin:true,topFirst:true,topN:5,done:{},passed:{},start:'e1s',time:'am',mode:'short',hall:'H1',zoom:{},custom:[],removed:{},camera:false});
 const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
 // Read and sanity-check the saved state; anything malformed falls back to defaults
 function load(){
@@ -469,12 +508,14 @@ function sanitize(s){
   if(typeof s.split==='boolean') st.split=s.split;
   if(typeof s.pin==='boolean') st.pin=s.pin;
   if(typeof s.topFirst==='boolean') st.topFirst=s.topFirst;
+  if(typeof s.camera==='boolean') st.camera=s.camera;
   if(Number.isInteger(s.topN)&&s.topN>=1&&s.topN<=50) st.topN=s.topN;
   if(s.hall in HALLS) st.hall=s.hall;
   // earlier version stored 3 priority tiers; turn them into a ranking once
   if(!st.order.length&&isObj(s.prio)) st.order=[...BASE,...st.custom].map((b,i)=>[b.id,(s.prio[b.id]||2)*100+i]).sort((a,b)=>a[1]-b[1]).map(a=>a[0]);
   return st;
 }
+const firstRun=(()=>{try{return localStorage.getItem(KEY)===null}catch(e){return false}})();
 let st=load();
 let syncing=false; // true while adopting another tab's data, so we don't write it straight back
 const save=()=>{if(syncing)return; try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
@@ -687,6 +728,8 @@ function segs(){
   document.getElementById('modeDesc').textContent=st.mode==='short'?(st.topFirst?`1位から回り始め、上位${st.topN}位までを先に最短で`:'1位から回り始め、あとは最短で')
     :st.mode==='flex'?'上位3件の中から近い順に（2つより後ろには下がりません）':'優先順位の通りに回ります';
   const lab=(id,v)=>document.querySelector(`#${id} [data-v="${v}"]`).textContent;
+  const camOn=document.getElementById('camOn'); camOn.checked=st.camera;
+  camOn.onchange=()=>{st.camera=camOn.checked;save();refresh();toast(st.camera?'戦利品カメラをオンにしました。各ブースのカメラのボタンから撮影できます':'戦利品カメラをオフにしました')};
   const more=document.getElementById('more');
   document.getElementById('moreSum').innerHTML=`<svg class="ms-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.4-6-10a6 6 0 0 1 12 0c0 4.6-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>`
     +`<span class="ms-item"><span class="ms-k">スタート</span><span class="ms-v">${lab('startSeg',st.start)}</span></span>`
@@ -710,6 +753,7 @@ function stopItem(s,i){
     <div class="meta"><span>${hallName(s.hall)}</span><span>サークル「${esc(s.circle)}」</span>${tw}</div>
     <div class="ctl"><span class="badge">優先 ${rankOf(s)+1}位</span>
     <label class="chk"><input type="checkbox" id="done-${esc(s.id)}" ${st.done[s.id]?'checked':''}>訪問済み</label>
+    ${st.camera?`<button class="cambtn" aria-label="${esc(s.name)} の戦利品を撮影" title="戦利品を撮影（訪問済みにします）">${CAM_SVG}</button>`:''}
     ${st.done[s.id]?'':`<button class="passbtn" aria-pressed="${!!st.passed[s.id]}">${st.passed[s.id]?'パスを取り消す':'パス'}</button>`}</div>
   </div>`;
   if(st.passed[s.id]&&!st.done[s.id]) li.classList.add('passed');
@@ -717,6 +761,11 @@ function stopItem(s,i){
   li.querySelector('input').onchange=e=>{
     if(e.target.checked){st.done[s.id]=1; delete st.passed[s.id]} else delete st.done[s.id];
     save(); refresh(); if(e.target.checked) showNext('訪問済みにしました');
+  };
+  const cb=li.querySelector('.cambtn');
+  if(cb) cb.onclick=()=>{
+    openCamera(s); // first, while the tap still counts as the user's action (browsers only open the camera from one)
+    if(!st.done[s.id]){st.done[s.id]=1; delete st.passed[s.id]; save(); refresh(); showNext('訪問済みにしました')}
   };
   const pb=li.querySelector('.passbtn');
   if(pb) pb.onclick=()=>{
@@ -804,7 +853,7 @@ function renderRemoved(){
 }
 /* ranking list with drag (pointer) and keyboard reordering */
 let toastT=0;
-function toast(msg){const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600)}
+function toast(msg,ms=3600){const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,ms)}
 function reordered(){
   toast(route.length?`巡回ルートを更新しました（最初は ${route[0].name}）`:'並べ替えました');
 }
@@ -859,7 +908,7 @@ function closeRank(){
 document.getElementById('openRank').onclick=openRank;
 document.getElementById('rankClose').onclick=closeRank;
 sheet.addEventListener('click',e=>{if(e.target===sheet)closeRank()});
-addEventListener('keydown',e=>{if(e.key==='Escape'){closeRank();closeShare()}});
+addEventListener('keydown',e=>{if(e.key==='Escape'){closeRank();closeShare();closePhoto()}});
 document.querySelector('.rank-link').addEventListener('click',e=>{e.preventDefault();openRank()});
 addEventListener('hashchange',()=>{if(location.hash==='#rank')openRank()});
 /* sharing between devices: a snapshot of the list travels as a compact code (in a URL / QR code where the page has a real address) */
@@ -901,7 +950,7 @@ function openShare(pane){
 function closeShare(){
   if(shareSheet.hidden) return;
   shareSheet.hidden=true; pending=null;
-  if(sheet.hidden) document.body.classList.remove('locked');
+  if(sheet.hidden&&photoSheet.hidden) document.body.classList.remove('locked');
   if(location.hash.startsWith('#import=')) history.replaceState(null,'',location.pathname+location.search);
   if(shareOpener&&shareOpener.focus) shareOpener.focus();
 }
@@ -928,7 +977,7 @@ document.getElementById('recvGo').onclick=async()=>{
 function showConfirm(o){pending=o; document.getElementById('confirmSummary').textContent='受け取った内容：'+describe(o); openShare('confirmPane')}
 document.getElementById('confirmYes').onclick=()=>{
   if(!pending) return;
-  const s=sanitize(pending); s.hall=st.hall; s.zoom=st.zoom; s.pin=st.pin; // keep this device's view preferences
+  const s=sanitize(pending); s.hall=st.hall; s.zoom=st.zoom; s.pin=st.pin; s.camera=st.camera; // keep this device's view preferences
   st=s; save(); closeShare(); refresh(); showHall(st.hall); applyPin(); toast('受け取ったデータを読み込みました');
 };
 document.getElementById('confirmNo').onclick=closeShare;
@@ -972,6 +1021,82 @@ function startDrag(e,li,h){
   };
   addEventListener('pointermove',move); addEventListener('pointerup',end); addEventListener('pointercancel',end);
 }
+/* 戦利品カメラ: the photo is redrawn smaller (which also drops its location data), then saved or handed to X through the share sheet.
+   Posting straight from the page would need the paid X API and a server, so the X app does the posting. */
+const CAM_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h4L9 5.5h6l2 3h4V19H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg>';
+const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const camInput=document.getElementById('camInput'), photoSheet=document.getElementById('photoSheet');
+const postText=document.getElementById('postText'), postGo=document.getElementById('postGo'), postIntent=document.getElementById('postIntent');
+let camFor=null, photo=null, photoOpener=null;
+function openCamera(s){camFor=s; camInput.value=''; camInput.click()}
+async function shrink(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=new Image(); img.src=url; await img.decode();
+    const k=Math.min(1,2048/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas');
+    c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('encode')),'image/jpeg',.9));
+  }finally{URL.revokeObjectURL(url)}
+}
+camInput.onchange=async()=>{
+  const f=camInput.files&&camInput.files[0]; if(!f||!camFor) return;
+  try{showPhoto(await shrink(f),camFor)}catch(e){toast('写真を読み込めませんでした')}
+};
+function showPhoto(blob,s){
+  if(photo) URL.revokeObjectURL(photo.url);
+  const t=new Date(), p=n=>String(n).padStart(2,'0');
+  const file=new File([blob],`m3-2027s_${t.getFullYear()}${p(t.getMonth()+1)}${p(t.getDate())}_${p(t.getHours())}${p(t.getMinutes())}${p(t.getSeconds())}.jpg`,{type:'image/jpeg'});
+  photo={file,url:URL.createObjectURL(file),s};
+  const img=document.getElementById('photoImg'); img.src=photo.url; img.alt=`${s.name}（${s.area}-${s.num}）で撮った写真`;
+  document.getElementById('photoTitle').textContent=`戦利品 — ${s.name}（${s.area}-${s.num}）`;
+  document.getElementById('photoHint').hidden=true; document.getElementById('postPane').hidden=true;
+  if(photoSheet.hidden){photoOpener=document.activeElement; photoSheet.hidden=false; document.body.classList.add('locked')}
+  document.getElementById('photoClose').focus();
+}
+function closePhoto(){
+  if(photoSheet.hidden) return;
+  photoSheet.hidden=true; if(sheet.hidden&&shareSheet.hidden) document.body.classList.remove('locked');
+  if(photo){URL.revokeObjectURL(photo.url); photo=null} document.getElementById('photoImg').removeAttribute('src');
+  if(photoOpener&&photoOpener.isConnected&&photoOpener.focus) photoOpener.focus();
+}
+const canShareFile=()=>{try{return !!(photo&&navigator.canShare&&navigator.canShare({files:[photo.file]}))}catch(e){return false}};
+function photoHint(msg){const h=document.getElementById('photoHint'); h.textContent=msg; h.hidden=false}
+document.getElementById('photoClose').onclick=closePhoto;
+photoSheet.addEventListener('click',e=>{if(e.target===photoSheet)closePhoto()});
+document.getElementById('photoRetake').onclick=()=>openCamera(photo?photo.s:camFor);
+document.getElementById('photoSave').onclick=()=>{
+  if(!photo) return;
+  if(IOS){ // iPhone keeps downloads in the Files app, so go through the share sheet to reach Photos
+    if(canShareFile()){photoHint('共有メニューの「画像を保存」を選ぶと、写真アプリに保存されます。'); navigator.share({files:[photo.file]}).catch(()=>{})}
+    else photoHint('写真を長押しして「"写真"に保存」を選んでください。');
+    return;
+  }
+  const a=document.createElement('a'); a.href=photo.url; a.download=photo.file.name; document.body.appendChild(a); a.click(); a.remove();
+  toast('写真を保存しました（ダウンロード）');
+};
+const intentUrl=()=>'https://x.com/intent/post?text='+encodeURIComponent(postText.value);
+postText.oninput=()=>postIntent.href=intentUrl();
+document.getElementById('photoPost').onclick=()=>{
+  if(!photo) return;
+  const s=photo.s, direct=canShareFile();
+  postText.value=`M3春2027の戦利品！\n${s.name}（${s.area}-${s.num}）\n#M3春2027`;
+  postIntent.href=intentUrl(); postGo.hidden=!direct; postIntent.hidden=direct;
+  document.getElementById('postNote').textContent=direct
+    ?'「Xで共有」を押すと共有メニューが開くので、「X」を選んでください。写真が添付された投稿画面が開きます。文章が入っていないときは、コピー済みの文章を貼り付けてください。'
+    :'この端末のブラウザでは、写真をXのアプリに直接渡せません。先に「保存」で写真を保存してから「Xの投稿画面を開く」を押し、投稿画面で保存した写真を添付してください。';
+  document.getElementById('photoHint').hidden=true; document.getElementById('postPane').hidden=false; postText.focus();
+};
+postGo.onclick=()=>{
+  if(!photo) return;
+  const text=postText.value;
+  // some apps (X on iPhone among them) drop text that comes with a photo, so it also goes to the clipboard
+  if(navigator.clipboard) navigator.clipboard.writeText(text).catch(()=>{});
+  navigator.share({files:[photo.file],text}).catch(e=>{if(e.name!=='AbortError') toast('共有できませんでした。「保存」してからXのアプリで投稿してください')});
+};
+postIntent.onclick=()=>{if(navigator.clipboard) navigator.clipboard.writeText(postText.value).catch(()=>{})};
+document.getElementById('postBack').onclick=()=>{document.getElementById('postPane').hidden=true};
+
 function refresh(focusId){rebuildStops();syncOrder();segs();computeD();compute();drawRoute();renderList();renderRank(focusId);renderTabs();renderRemoved();document.getElementById('count').textContent=STOPS.length}
 document.getElementById('reset').onclick=()=>{st.done={};st.passed={};save();refresh()};
 
@@ -1010,6 +1135,10 @@ addEventListener('storage',e=>{if(e.key==='m3-2027s-route-color') renderSwatches
 renderSwatches();
 
 buildMaps(); refresh(); showHall(st.hall); applyPin(); importFromHash();
+/* ホーム画面に追加: works offline once loaded (sw.js); on iPhone the home-screen app keeps its own data, separate from Safari's */
+if('serviceWorker' in navigator&&location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+if(standalone&&IOS&&firstRun&&!location.hash.startsWith('#import=')) toast('ホーム画面のアプリは、Safariとは別にデータを保存します。Safariで作ったリストは「ほかの端末と共有」で写してください',9000);
 if(location.hash==='#rank') openRank();
 addEventListener('resize',()=>applyZoom());
 </script>
